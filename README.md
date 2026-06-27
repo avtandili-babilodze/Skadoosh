@@ -16,6 +16,11 @@ The first launch downloads Godot 4.3 automatically into a local `.godot-bin/` fo
 > **macOS note:** if it's blocked as "unidentified developer", allow it once in
 > *System Settings → Privacy & Security*, then run `./run.sh` again.
 
+> **Already have Godot 4.3?** The script auto-detects it from your `PATH`, a
+> `godot` shell alias (read from `~/.zshrc` / `~/.bashrc`), or common install
+> folders — so it usually won't re-download. To force a specific binary:
+> `GODOT=/path/to/Godot ./run.sh` (Windows: `set GODOT=C:\path\to\Godot.exe` then `run.bat`).
+
 ## Controls
 
 | Action     | Player 1 (Kunoichi) | Player 2 (Mage) |

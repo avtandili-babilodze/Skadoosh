@@ -29,6 +29,9 @@ const BINDINGS := {
 
 
 func _ready() -> void:
+	# Force a clean window title (otherwise debug runs show "Skadoosh (DEBUG)").
+	get_window().title = "Skadoosh"
+
 	for action: StringName in BINDINGS:
 		# Start each action clean so this file is authoritative.
 		if InputMap.has_action(action):

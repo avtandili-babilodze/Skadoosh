@@ -7,13 +7,34 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 VER="4.3-stable"
 BIN_DIR="$DIR/.godot-bin"
 
-# 1) Use an existing Godot if one is already installed/downloaded.
-GODOT=""
-if command -v godot >/dev/null 2>&1; then
-    GODOT="$(command -v godot)"
-elif command -v godot4 >/dev/null 2>&1; then
-    GODOT="$(command -v godot4)"
-fi
+# 1) Find an existing Godot before downloading:
+#    $GODOT override -> PATH -> a 'godot' shell alias -> common install spots.
+find_existing_godot() {
+    # Explicit override.
+    if [ -n "$GODOT" ] && [ -x "$GODOT" ]; then printf '%s' "$GODOT"; return; fi
+    # On PATH.
+    for c in godot godot4; do
+        if command -v "$c" >/dev/null 2>&1; then command -v "$c"; return; fi
+    done
+    # Scripts can't run aliases, but we can read them: alias godot="/path/to/Godot"
+    for rc in "$HOME/.zshrc" "$HOME/.bashrc" "$HOME/.bash_aliases" "$HOME/.profile"; do
+        [ -f "$rc" ] || continue
+        local line cand
+        line="$(grep -E '^[[:space:]]*alias[[:space:]]+godot=' "$rc" 2>/dev/null | head -n1)" || true
+        [ -n "$line" ] || continue
+        cand="${line#*=}"
+        cand="$(printf '%s' "$cand" | tr -d "\"'" | awk '{print $1}')"
+        cand="${cand/#\~/$HOME}"
+        [ -x "$cand" ] && { printf '%s' "$cand"; return; }
+    done
+    # Common install locations.
+    for g in "$HOME"/project/tools/Godot* /opt/godot* /usr/local/bin/godot* "$HOME"/.local/bin/godot* "$HOME"/Godot*; do
+        case "$g" in *.zip) continue;; esac
+        [ -f "$g" ] && [ -x "$g" ] && { printf '%s' "$g"; return; }
+    done
+    printf ''
+}
+GODOT="$(find_existing_godot)"
 
 # 2) Otherwise download a local copy (no system install needed).
 if [ -z "$GODOT" ]; then
