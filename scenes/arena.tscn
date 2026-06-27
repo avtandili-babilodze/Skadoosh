@@ -1,0 +1,89 @@
+[gd_scene load_steps=9 format=3 uid="uid://fbpwehrrhmaj"]
+
+[ext_resource type="PackedScene" uid="uid://bmskuclp7mfst" path="res://entities/player/player.tscn" id="1_player"]
+[ext_resource type="Resource" uid="uid://cn5aboaia6w8v" path="res://data/heroes/knight.tres" id="2_knight"]
+[ext_resource type="Resource" uid="uid://voqc2jrwlw2f" path="res://data/heroes/mage.tres" id="3_mage"]
+[ext_resource type="Script" path="res://scenes/arena.gd" id="4_arena"]
+[ext_resource type="Texture2D" uid="uid://cr8pkoevojmlm" path="res://assets/sprites/background.png" id="5_bg"]
+[ext_resource type="Texture2D" uid="uid://clvo7bm0v05xh" path="res://assets/sprites/platform.png" id="6_plat"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
+size = Vector2(1180, 40)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
+size = Vector2(380, 24)
+
+[node name="Arena" type="Node2D"]
+script = ExtResource("4_arena")
+
+[node name="Background" type="Sprite2D" parent="."]
+position = Vector2(576, 324)
+scale = Vector2(1.7, 1.7)
+texture = ExtResource("5_bg")
+
+[node name="Ground" type="StaticBody2D" parent="."]
+position = Vector2(576, 600)
+
+[node name="Visual" type="Sprite2D" parent="Ground"]
+position = Vector2(0, 139)
+scale = Vector2(0.95, 0.95)
+texture = ExtResource("6_plat")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Ground"]
+position = Vector2(0, 20)
+shape = SubResource("RectangleShape2D_ground")
+
+[node name="Platform" type="StaticBody2D" parent="."]
+position = Vector2(576, 400)
+
+[node name="Visual" type="Sprite2D" parent="Platform"]
+position = Vector2(0, 47)
+scale = Vector2(0.32, 0.32)
+texture = ExtResource("6_plat")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Platform"]
+position = Vector2(0, 12)
+shape = SubResource("RectangleShape2D_platform")
+
+[node name="Player1" parent="." instance=ExtResource("1_player")]
+position = Vector2(400, 300)
+hero = ExtResource("2_knight")
+
+[node name="Player2" parent="." instance=ExtResource("1_player")]
+position = Vector2(750, 300)
+hero = ExtResource("3_mage")
+action_left = &"p2_left"
+action_right = &"p2_right"
+action_jump = &"p2_jump"
+action_down = &"p2_down"
+action_dash = &"p2_dash"
+action_attack = &"p2_attack"
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="P1" type="Label" parent="HUD"]
+offset_left = 24.0
+offset_top = 16.0
+offset_right = 420.0
+offset_bottom = 96.0
+theme_override_font_sizes/font_size = 28
+text = "P1"
+
+[node name="P2" type="Label" parent="HUD"]
+offset_left = 732.0
+offset_top = 16.0
+offset_right = 1128.0
+offset_bottom = 96.0
+theme_override_font_sizes/font_size = 28
+text = "P2"
+horizontal_alignment = 2
+
+[node name="Message" type="Label" parent="HUD"]
+offset_left = 326.0
+offset_top = 240.0
+offset_right = 826.0
+offset_bottom = 408.0
+theme_override_font_sizes/font_size = 46
+text = "WINNER"
+horizontal_alignment = 1
+vertical_alignment = 1

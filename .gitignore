@@ -1,0 +1,6 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# Auto-downloaded Godot binary (fetched by run.sh / run.bat)
+.godot-bin/
