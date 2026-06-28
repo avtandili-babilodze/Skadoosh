@@ -1,0 +1,74 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=9 format=3 uid="uid://voqc2jrwlw2f"]
+
+[ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
+[ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
+[ext_resource type="Texture2D" uid="uid://dcymplo2uffg6" path="res://data/heroes/linea/idle.png" id="3_tex"]
+[ext_resource type="Texture2D" uid="uid://b1xcxpblho8ds" path="res://data/heroes/linea/attack.png" id="4_pose"]
+[ext_resource type="Texture2D" uid="uid://cbegcmtg3qwlh" path="res://data/heroes/linea/fireball.png" id="5_fire"]
+[ext_resource type="Texture2D" uid="uid://bryyhjc0o484v" path="res://data/heroes/linea/linea_walking.png" id="6_walk"]
+
+[sub_resource type="Resource" id="light"]
+script = ExtResource("2_atk")
+skill_name = "Fire Jab"
+kind = 1
+damage = 6.0
+knockback = 300.0
+knockback_up_ratio = 0.15
+duration = 0.25
+cooldown = 0.6
+projectile_texture = ExtResource("5_fire")
+projectile_speed = 260.0
+projectile_range = 20.0
+projectile_lifetime = 0.8
+projectile_height = 38.0
+projectile_faces_right = true
+projectile_spawn_offset = Vector2(48, -6)
+
+[sub_resource type="Resource" id="heavy"]
+script = ExtResource("2_atk")
+skill_name = "Fireball"
+kind = 1
+damage = 12.0
+knockback = 460.0
+knockback_up_ratio = 0.18
+duration = 0.25
+cooldown = 1.0
+projectile_texture = ExtResource("5_fire")
+projectile_speed = 780.0
+projectile_range = 190.0
+projectile_lifetime = 2.0
+projectile_height = 80.0
+projectile_faces_right = true
+projectile_spawn_offset = Vector2(80, -8)
+
+[resource]
+script = ExtResource("1_hero")
+hero_name = "Linea"
+description = "A nimble glass cannon. Fragile, but zones with fireballs at range."
+speed = 300.0
+jump_velocity = -700.0
+max_jumps = 2
+gravity_scale = 1.5
+fast_fall_scale = 2.0
+dash_speed = 900.0
+dash_duration = 0.15
+dash_cooldown = 0.6
+max_health = 80.0
+defense = 3.0
+knockback_percent_scale = 1.0
+min_attack_interval = 0.5
+light_attack = SubResource("light")
+heavy_attack = SubResource("heavy")
+attack_texture = ExtResource("4_pose")
+attack_faces_right = true
+walk_texture = ExtResource("6_walk")
+walk_hframes = 4
+walk_vframes = 2
+walk_frames = 8
+walk_fps = 12.0
+walk_sprite_height = 130.0
+walk_faces_right = true
+texture = ExtResource("3_tex")
+faces_right = false
+color = Color(0.8, 0.4, 0.9, 1)
+sprite_height = 110.0

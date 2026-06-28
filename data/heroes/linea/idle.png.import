@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b1xcxpblho8ds"
-path="res://.godot/imported/mage_attack.png-7b54b93b40059d8d8581aec5962ac0e7.ctex"
+uid="uid://dcymplo2uffg6"
+path="res://.godot/imported/idle.png-6ef3343dbc5a8c814609face3278a4f6.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/mage_attack.png"
-dest_files=["res://.godot/imported/mage_attack.png-7b54b93b40059d8d8581aec5962ac0e7.ctex"]
+source_file="res://data/heroes/linea/idle.png"
+dest_files=["res://.godot/imported/idle.png-6ef3343dbc5a8c814609face3278a4f6.ctex"]
 
 [params]
 

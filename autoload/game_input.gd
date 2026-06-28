@@ -18,6 +18,7 @@ const BINDINGS := {
 	"p1_down": KEY_S,
 	"p1_dash": KEY_SHIFT,
 	"p1_attack": KEY_F,
+	"p1_attack2": KEY_G,
 	# Player 2 — right hand (arrow keys)
 	"p2_left": KEY_LEFT,
 	"p2_right": KEY_RIGHT,
@@ -25,6 +26,7 @@ const BINDINGS := {
 	"p2_down": KEY_DOWN,
 	"p2_dash": KEY_CTRL,
 	"p2_attack": KEY_SLASH,
+	"p2_attack2": KEY_APOSTROPHE,
 }
 
 

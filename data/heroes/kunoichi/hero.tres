@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=7 format=3 uid="uid://cn5aboaia6w8v"]
+
+[ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
+[ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
+[ext_resource type="Texture2D" uid="uid://b3trsxtrobx05" path="res://data/heroes/kunoichi/idle.png" id="3_tex"]
+[ext_resource type="Texture2D" uid="uid://bgs2bb6m8j8k0" path="res://data/heroes/kunoichi/attack.png" id="4_pose"]
+
+[sub_resource type="Resource" id="light"]
+script = ExtResource("2_atk")
+skill_name = "Quick Slash"
+kind = 0
+damage = 7.0
+knockback = 320.0
+knockback_up_ratio = 0.16
+duration = 0.2
+cooldown = 0.35
+reach = 100.0
+height = 90.0
+
+[sub_resource type="Resource" id="heavy"]
+script = ExtResource("2_atk")
+skill_name = "Heavy Strike"
+kind = 0
+damage = 16.0
+knockback = 600.0
+knockback_up_ratio = 0.22
+duration = 0.3
+cooldown = 0.75
+reach = 110.0
+height = 95.0
+
+[resource]
+script = ExtResource("1_hero")
+hero_name = "Kunoichi"
+description = "A sturdy bruiser. Fast and tanky, hits hard up close."
+speed = 400.0
+jump_velocity = -600.0
+max_jumps = 2
+gravity_scale = 1.4
+fast_fall_scale = 2.0
+dash_speed = 900.0
+dash_duration = 0.15
+dash_cooldown = 0.6
+max_health = 130.0
+defense = 5.0
+knockback_percent_scale = 1.0
+min_attack_interval = 0.0
+light_attack = SubResource("light")
+heavy_attack = SubResource("heavy")
+attack_texture = ExtResource("4_pose")
+attack_faces_right = true
+texture = ExtResource("3_tex")
+faces_right = false
+color = Color(0.3, 0.55, 0.9, 1)
+sprite_height = 110.0

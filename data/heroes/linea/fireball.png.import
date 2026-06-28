@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dcymplo2uffg6"
-path="res://.godot/imported/mage.png-52bf76e23bab89e3e7950eef80c79479.ctex"
+uid="uid://cbegcmtg3qwlh"
+path="res://.godot/imported/fireball.png-e9f8b996e27f789f0dc9d97e253513f7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/mage.png"
-dest_files=["res://.godot/imported/mage.png-52bf76e23bab89e3e7950eef80c79479.ctex"]
+source_file="res://data/heroes/linea/fireball.png"
+dest_files=["res://.godot/imported/fireball.png-e9f8b996e27f789f0dc9d97e253513f7.ctex"]
 
 [params]
 

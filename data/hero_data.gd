@@ -29,29 +29,41 @@ extends Resource
 
 @export_group("Combat")
 @export var max_health: float = 100.0
-## Incoming damage is divided by this. Higher = tankier.
-@export var defense: float = 1.0
-## Damage added to the victim's "% taken" on each hit (more % = bigger knockback).
-@export var attack_power: float = 10.0
-## Base knockback impulse applied to a hit opponent (grows with their % taken).
-@export var knockback: float = 1100.0
-## Upward part of knockback as a fraction of the sideways force.
-## Low = mostly horizontal push with little vertical pop.
-@export var knockback_up_ratio: float = 0.18
-## Horizontal reach of the attack, in pixels.
-@export var attack_range: float = 95.0
-## Vertical reach of the attack, in pixels.
-@export var attack_height: float = 90.0
-## How long the attack pose / active window lasts, in seconds.
-@export var attack_duration: float = 0.25
-## Cooldown before the next attack, in seconds.
-@export var attack_cooldown: float = 0.45
+## Damage-resistance rating, 0 (none) to 10 (halves incoming %). Higher = tankier.
+@export_range(0.0, 10.0) var defense: float = 0.0
+## How much the accumulated damage % (shown in the HUD) amplifies knockback:
+## factor = 1 + (% / 100) × this. 1 = knockback ×(1 + %/100) — at 100% you fly twice as far.
+@export var knockback_percent_scale: float = 1.0
+## Minimum time between ANY two attacks (light or heavy). Stops firing both at once.
+@export var min_attack_interval: float = 0.0
+
+@export_group("Skills")
+## The quick, weaker attack (bound to the secondary attack key).
+@export var light_attack: AttackData
+## The slower, stronger attack (bound to the primary attack key).
+@export var heavy_attack: AttackData
 
 @export_group("Attack Appearance")
-## Image shown while attacking. Falls back to the normal texture if empty.
+## Pose shown while attacking (shared by both skills). Falls back to the idle texture if empty.
 @export var attack_texture: Texture2D
 ## Set FALSE if the attack art is drawn facing left.
 @export var attack_faces_right: bool = true
+
+@export_group("Walk Animation")
+## Optional walk-cycle sprite sheet. If empty, the hero just uses the idle pose.
+@export var walk_texture: Texture2D
+## Sheet grid — number of frame columns.
+@export var walk_hframes: int = 1
+## Sheet grid — number of frame rows.
+@export var walk_vframes: int = 1
+## Frames to actually play (0 = hframes × vframes). Set if the grid has blank cells.
+@export var walk_frames: int = 0
+## Playback speed, in frames per second.
+@export var walk_fps: float = 12.0
+## On-screen height of one frame, in px. Tune so walking matches the idle size.
+@export var walk_sprite_height: float = 130.0
+## Set FALSE if the walk art is drawn facing left.
+@export var walk_faces_right: bool = true
 
 @export_group("Appearance")
 ## Avatar image for this hero. If set, it's shown instead of the color box.

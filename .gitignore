@@ -4,3 +4,7 @@
 
 # Auto-downloaded Godot binary (fetched by run.sh / run.bat)
 .godot-bin/
+
+# Launcher state / logs (per-machine, not part of the project)
+.skadoosh_version
+skadoosh-log.txt

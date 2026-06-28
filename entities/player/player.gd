@@ -6,6 +6,9 @@ extends CharacterBody2D
 ## player's keys. The same scene is reused for every player; only the `hero`
 ## and the action names differ.
 
+## Generic projectile used by ranged heroes (configured per-hero from HeroData).
+const PROJECTILE := preload("res://entities/projectile/projectile.tscn")
+
 ## The hero this player is currently playing. Assigned per-player in the arena.
 @export var hero: HeroData
 
@@ -16,10 +19,14 @@ extends CharacterBody2D
 @export var action_down: StringName = "p1_down"
 @export var action_dash: StringName = "p1_dash"
 @export var action_attack: StringName = "p1_attack"
+## Light-attack key (the heavy attack is on action_attack).
+@export var action_attack2: StringName = "p1_attack2"
 
 @export_group("Rules")
 ## Seconds of invincibility after respawning (can't be hit during this window).
 @export var respawn_invincibility: float = 3.0
+## Seconds you're frozen (no control) after getting hit. Knockback still carries you.
+@export var hit_stun: float = 0.2
 
 @onready var _visual: ColorRect = $ColorRect
 @onready var _sprite: Sprite2D = $Sprite2D
@@ -37,7 +44,12 @@ var _dash_time_left: float = 0.0
 var _dash_cooldown_left: float = 0.0
 var _attack_time_left: float = 0.0
 var _attack_cooldown_left: float = 0.0
+var _attack2_cooldown_left: float = 0.0
+var _attack_lock_left: float = 0.0    # shared lockout: blocks BOTH attacks briefly
+var _stun_time_left: float = 0.0      # hit-stun: no control while > 0
 var _art_faces_right: bool = true     # drawn facing of whatever texture is shown
+var _pose: String = ""                # current visual: "idle" / "walk" / "attack"
+var _anim_time: float = 0.0           # elapsed time in the current walk cycle
 
 
 func _ready() -> void:
@@ -55,6 +67,9 @@ func _physics_process(delta: float) -> void:
 	_dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
 	_dash_time_left = maxf(0.0, _dash_time_left - delta)
 	_attack_cooldown_left = maxf(0.0, _attack_cooldown_left - delta)
+	_attack2_cooldown_left = maxf(0.0, _attack2_cooldown_left - delta)
+	_attack_lock_left = maxf(0.0, _attack_lock_left - delta)
+	_stun_time_left = maxf(0.0, _stun_time_left - delta)
 
 	# Respawn invincibility: count down and blink the fighter while active.
 	if _invincible_time_left > 0.0:
@@ -64,9 +79,7 @@ func _physics_process(delta: float) -> void:
 			modulate.a = 1.0
 
 	if _attack_time_left > 0.0:
-		_attack_time_left -= delta
-		if _attack_time_left <= 0.0:
-			_show_idle()  # attack finished → return to the idle pose
+		_attack_time_left -= delta  # pose selector below restores idle/walk when it ends
 
 	# --- Gravity ---
 	if not is_on_floor():
@@ -75,34 +88,51 @@ func _physics_process(delta: float) -> void:
 			fall *= hero.fast_fall_scale  # fast fall
 		velocity += fall * delta
 
-	# --- Jump (double / multi) ---
+	# Refill jumps on landing (even while stunned, so you're ready when it ends).
 	if is_on_floor():
 		_jumps_left = hero.max_jumps
-	if Input.is_action_just_pressed(action_jump) and _jumps_left > 0:
-		velocity.y = hero.jump_velocity
-		_jumps_left -= 1
 
-	# --- Facing ---
-	var direction := Input.get_axis(action_left, action_right)
-	if direction != 0.0:
-		_facing = signf(direction)
+	# While stunned: no input is read; gravity + knockback momentum still apply.
+	var stunned := _stun_time_left > 0.0
+	var direction := 0.0
+	if not stunned:
+		# --- Jump (double / multi) ---
+		if Input.is_action_just_pressed(action_jump) and _jumps_left > 0:
+			velocity.y = hero.jump_velocity
+			_jumps_left -= 1
 
-	# --- Dash ---
-	if Input.is_action_just_pressed(action_dash) and _dash_cooldown_left == 0.0:
-		_dash_time_left = hero.dash_duration
-		_dash_cooldown_left = hero.dash_cooldown
+		# --- Facing ---
+		direction = Input.get_axis(action_left, action_right)
+		if direction != 0.0:
+			_facing = signf(direction)
 
-	# --- Attack ---
-	if Input.is_action_just_pressed(action_attack) and _attack_cooldown_left == 0.0:
-		_start_attack()
+		# --- Dash ---
+		if Input.is_action_just_pressed(action_dash) and _dash_cooldown_left == 0.0:
+			_dash_time_left = hero.dash_duration
+			_dash_cooldown_left = hero.dash_cooldown
+
+		# --- Attack ---
+		if Input.is_action_just_pressed(action_attack) and _attack_cooldown_left == 0.0 and _attack_lock_left == 0.0:
+			_use_skill(hero.heavy_attack, true)
+		if Input.is_action_just_pressed(action_attack2) and _attack2_cooldown_left == 0.0 and _attack_lock_left == 0.0:
+			_use_skill(hero.light_attack, false)
 
 	# --- Horizontal velocity ---
-	if _dash_time_left > 0.0:
+	if stunned:
+		pass                                       # locked: keep the knockback momentum
+	elif _dash_time_left > 0.0:
 		velocity.x = _facing * hero.dash_speed     # dash overrides movement
 	elif direction != 0.0:
 		velocity.x = direction * hero.speed
 	else:
 		velocity.x = move_toward(velocity.x, 0.0, hero.speed)
+
+	# --- Pose selection (don't override the attack pose while it plays) ---
+	if _attack_time_left <= 0.0:
+		if is_on_floor() and direction != 0.0 and hero.walk_texture != null:
+			_show_walk(delta)
+		else:
+			_show_idle()
 
 	# Keep the avatar facing its movement direction.
 	_sprite.flip_h = (_facing > 0.0) != _art_faces_right
@@ -110,33 +140,68 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 
-## Begin an attack: show the attack pose and hit anyone in range in front.
-func _start_attack() -> void:
-	_attack_time_left = hero.attack_duration
-	_attack_cooldown_left = hero.attack_cooldown
+## Perform a skill (light or heavy). is_heavy picks which cooldown timer to set.
+func _use_skill(skill: AttackData, is_heavy: bool) -> void:
+	if skill == null:
+		return
+	_attack_time_left = skill.duration
+	_attack_lock_left = hero.min_attack_interval
+	if is_heavy:
+		_attack_cooldown_left = skill.cooldown
+	else:
+		_attack2_cooldown_left = skill.cooldown
 
+	# Both skills share the hero's attack pose.
 	if hero.attack_texture != null:
 		_show_texture(hero.attack_texture, hero.attack_faces_right)
+		_pose = "attack"
 
-	# Simple hitbox: a box in front of us. Hit every other player inside it.
+	if skill.kind == AttackData.Kind.RANGED:
+		_spawn_projectile(skill)
+	else:
+		_melee_hit(skill)
+
+
+## Melee: a hitbox in front of us. Hit every other player inside it.
+func _melee_hit(skill: AttackData) -> void:
 	for other in get_tree().get_nodes_in_group("players"):
 		if other == self:
 			continue
 		var offset: Vector2 = other.global_position - global_position
 		var in_front := signf(offset.x) == _facing
-		if in_front and absf(offset.x) <= hero.attack_range and absf(offset.y) <= hero.attack_height:
-			other.take_hit(hero.attack_power, hero.knockback, _facing)
+		if in_front and absf(offset.x) <= skill.reach and absf(offset.y) <= skill.height:
+			other.take_hit(skill.damage, skill.knockback, _facing, skill.knockback_up_ratio)
 
 
-## Receive a hit: add damage % and get launched away from the attacker.
-func take_hit(damage: float, base_knockback: float, dir: float) -> void:
+## Ranged: spawn a projectile in front of us that flies in our facing direction.
+func _spawn_projectile(skill: AttackData) -> void:
+	if skill.projectile_texture == null:
+		return  # nothing to shoot — misconfigured ranged skill
+	var proj := PROJECTILE.instantiate()
+	proj.configure(self, _facing, skill.damage, skill.knockback, skill.knockback_up_ratio,
+			skill.projectile_speed, skill.projectile_range, skill.projectile_lifetime,
+			skill.projectile_texture, skill.projectile_height, skill.projectile_faces_right)
+	get_tree().current_scene.add_child(proj)
+	var off := skill.projectile_spawn_offset
+	proj.global_position = global_position + Vector2(_facing * off.x, off.y)
+
+
+## Receive a hit: add damage % and get launched away. The attack supplies its own
+## knockback and up-ratio; the victim's low health amplifies it.
+func take_hit(damage: float, base_knockback: float, dir: float, up_ratio: float) -> void:
 	if _invincible_time_left > 0.0:
 		return  # just respawned — immune for now
-	damage_taken += damage
-	# Knockback grows with accumulated damage — classic platform-fighter feel.
-	var force := base_knockback * (1.0 + damage_taken / 100.0)
+	# Defense (0–10) mitigates incoming %: 0 = full damage, 10 = halved.
+	var mitigation := clampf(hero.defense, 0.0, 10.0) / 20.0
+	damage_taken += damage * (1.0 - mitigation)
+	# Freeze briefly and cancel any dash so the knockback isn't fought.
+	_stun_time_left = hit_stun
+	_dash_time_left = 0.0
+	# Knockback rises with the damage % shown in the HUD: ×(1 + %/100).
+	var percent_factor := 1.0 + (damage_taken / 100.0) * hero.knockback_percent_scale
+	var force := base_knockback * percent_factor
 	# Mostly horizontal push, with a small upward component.
-	velocity = Vector2(dir * force, -force * hero.knockback_up_ratio)
+	velocity = Vector2(dir * force, -force * up_ratio)
 
 
 ## Return to the spawn point and reset state (after a ring-out, if lives remain).
@@ -149,6 +214,9 @@ func respawn() -> void:
 	_attack_time_left = 0.0
 	_dash_cooldown_left = 0.0
 	_attack_cooldown_left = 0.0
+	_attack2_cooldown_left = 0.0
+	_attack_lock_left = 0.0
+	_stun_time_left = 0.0
 	_invincible_time_left = respawn_invincibility
 	_show_idle()
 
@@ -162,6 +230,9 @@ func eliminate() -> void:
 
 ## Show the normal (idle) appearance.
 func _show_idle() -> void:
+	if _pose == "idle":
+		return
+	_pose = "idle"
 	if hero.texture != null:
 		_show_texture(hero.texture, hero.faces_right)
 	else:
@@ -170,9 +241,34 @@ func _show_idle() -> void:
 		_sprite.visible = false
 
 
-## Swap the sprite to `tex`, scaled to hero.sprite_height, remembering its facing.
+## Play the walk-cycle sheet, advancing the frame over time.
+func _show_walk(delta: float) -> void:
+	if _pose != "walk":
+		_pose = "walk"
+		_anim_time = 0.0
+		_sprite.texture = hero.walk_texture
+		_sprite.hframes = maxi(1, hero.walk_hframes)
+		_sprite.vframes = maxi(1, hero.walk_vframes)
+		# Scale by a single frame's height so it matches the idle on-screen size.
+		var frame_h := hero.walk_texture.get_height() / float(_sprite.vframes)
+		if frame_h > 0.0:
+			var s := hero.walk_sprite_height / frame_h
+			_sprite.scale = Vector2(s, s)
+		_art_faces_right = hero.walk_faces_right
+		_sprite.visible = true
+		_visual.visible = false
+	_anim_time += delta
+	var count := hero.walk_frames if hero.walk_frames > 0 else _sprite.hframes * _sprite.vframes
+	if count > 0:
+		_sprite.frame = int(_anim_time * hero.walk_fps) % count
+
+
+## Swap the sprite to a single-frame `tex`, scaled to hero.sprite_height.
 func _show_texture(tex: Texture2D, faces_right: bool) -> void:
 	_sprite.texture = tex
+	_sprite.hframes = 1
+	_sprite.vframes = 1
+	_sprite.frame = 0
 	var h := tex.get_height()
 	if h > 0:
 		var s := hero.sprite_height / h

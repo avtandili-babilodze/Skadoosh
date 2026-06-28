@@ -1,8 +1,8 @@
 [gd_scene load_steps=9 format=3 uid="uid://fbpwehrrhmaj"]
 
 [ext_resource type="PackedScene" uid="uid://bmskuclp7mfst" path="res://entities/player/player.tscn" id="1_player"]
-[ext_resource type="Resource" uid="uid://cn5aboaia6w8v" path="res://data/heroes/knight.tres" id="2_knight"]
-[ext_resource type="Resource" uid="uid://voqc2jrwlw2f" path="res://data/heroes/mage.tres" id="3_mage"]
+[ext_resource type="Resource" uid="uid://cn5aboaia6w8v" path="res://data/heroes/kunoichi/hero.tres" id="2_kunoichi"]
+[ext_resource type="Resource" uid="uid://voqc2jrwlw2f" path="res://data/heroes/linea/hero.tres" id="3_linea"]
 [ext_resource type="Script" path="res://scenes/arena.gd" id="4_arena"]
 [ext_resource type="Texture2D" uid="uid://cr8pkoevojmlm" path="res://assets/sprites/background.png" id="5_bg"]
 [ext_resource type="Texture2D" uid="uid://clvo7bm0v05xh" path="res://assets/sprites/platform.png" id="6_plat"]
@@ -11,7 +11,7 @@
 size = Vector2(1180, 40)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_platform"]
-size = Vector2(380, 24)
+size = Vector2(429, 25)
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("4_arena")
@@ -42,22 +42,23 @@ scale = Vector2(0.32, 0.32)
 texture = ExtResource("6_plat")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Platform"]
-position = Vector2(0, 12)
+position = Vector2(0.5, 12.5)
 shape = SubResource("RectangleShape2D_platform")
 
 [node name="Player1" parent="." instance=ExtResource("1_player")]
 position = Vector2(400, 300)
-hero = ExtResource("2_knight")
+hero = ExtResource("2_kunoichi")
 
 [node name="Player2" parent="." instance=ExtResource("1_player")]
 position = Vector2(750, 300)
-hero = ExtResource("3_mage")
+hero = ExtResource("3_linea")
 action_left = &"p2_left"
 action_right = &"p2_right"
 action_jump = &"p2_jump"
 action_down = &"p2_down"
 action_dash = &"p2_dash"
 action_attack = &"p2_attack"
+action_attack2 = &"p2_attack2"
 
 [node name="HUD" type="CanvasLayer" parent="."]
 

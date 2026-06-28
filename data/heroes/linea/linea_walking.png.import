@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgs2bb6m8j8k0"
-path="res://.godot/imported/kunoichi_attack.png-aca07e86b2e83edff1c63533340add72.ctex"
+uid="uid://bryyhjc0o484v"
+path="res://.godot/imported/linea_walking.png-0a225d76bf78104fb44ff40d0a916ae1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/kunoichi_attack.png"
-dest_files=["res://.godot/imported/kunoichi_attack.png-aca07e86b2e83edff1c63533340add72.ctex"]
+source_file="res://data/heroes/linea/linea_walking.png"
+dest_files=["res://.godot/imported/linea_walking.png-0a225d76bf78104fb44ff40d0a916ae1.ctex"]
 
 [params]
 
