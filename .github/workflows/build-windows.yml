@@ -1,0 +1,76 @@
+name: Build Windows
+
+# Builds the Windows .exe in the cloud and publishes it to a GitHub Release.
+#
+# How to trigger:
+#   * Push a version tag:   git tag v1.1 && git push origin v1.1
+#     -> builds and publishes a release for that tag automatically.
+#   * Or run it by hand:    Actions tab -> "Build Windows" -> "Run workflow"
+#     -> enter a tag name (e.g. v1.1) and it builds + publishes that release.
+#
+# No secrets to configure: GitHub provides the token automatically.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.1)'
+        required: true
+        default: 'v1.0'
+
+permissions:
+  contents: write
+
+env:
+  GODOT_VERSION: 4.3-stable
+  TEMPLATES_VERSION: 4.3.stable
+
+jobs:
+  build-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Godot + Windows export templates
+        run: |
+          set -e
+          # Headless Godot editor (used to run the export).
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip" -O godot.zip
+          unzip -q godot.zip
+          sudo mv "Godot_v${GODOT_VERSION}_linux.x86_64" /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          # Export templates.
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz" -O templates.tpz
+          unzip -q templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/${TEMPLATES_VERSION}"
+          mv templates/* "$HOME/.local/share/godot/export_templates/${TEMPLATES_VERSION}/"
+
+      - name: Import assets
+        run: godot --headless --path . --import || true
+
+      - name: Export Windows .exe
+        run: |
+          mkdir -p build/windows
+          godot --headless --path . --export-release "Windows Desktop" build/windows/Skadoosh.exe
+          ls -la build/windows
+
+      - name: Determine release tag
+        id: tag
+        run: echo "name=${{ github.event.inputs.tag || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.name }}
+          name: Skadoosh ${{ steps.tag.outputs.name }}
+          body: |
+            Windows build of Skadoosh.
+
+            **Download `Skadoosh.exe` below and double-click to play.** No install needed.
+
+            If Windows SmartScreen warns about an unknown publisher, click **More info → Run anyway**.
+          files: build/windows/Skadoosh.exe
