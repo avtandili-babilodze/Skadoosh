@@ -12,16 +12,20 @@ extends Node2D
 @onready var _label_p2: Label = $HUD/P2
 @onready var _message: Label = $HUD/Message
 
-var _bounds: Rect2
+var _view: Vector2         # viewport size in px
+var _side_margin: float    # how far off the left/right edges a player may go before ring-out
+var _bottom_margin: float  # how far below the screen a player may fall before ring-out
 var _players: Array = []   # ordered left-to-right
 var _lives: Array = []     # parallel to _players
 var _game_over: bool = false
 
 
 func _ready() -> void:
-	# The "safe zone" is the screen plus a margin; outside it = ring-out.
-	var view := get_viewport_rect().size
-	_bounds = Rect2(Vector2(-kill_margin, -kill_margin), view + Vector2(kill_margin, kill_margin) * 2.0)
+	_view = get_viewport_rect().size
+	# How far off-screen you may travel before ringing out; an edge marker tracks
+	# the player while they're out there. The top is fully open (no limit).
+	_side_margin = 500.0
+	_bottom_margin = 1000.0
 
 	_players = get_tree().get_nodes_in_group("players")
 	_players.sort_custom(func(a, b): return a.global_position.x < b.global_position.x)
@@ -41,7 +45,11 @@ func _physics_process(_delta: float) -> void:
 	for i in _players.size():
 		if _lives[i] <= 0:
 			continue
-		if not _bounds.has_point(_players[i].global_position):
+		# Ring out past the sides (up to _side_margin off-screen) and below the bottom.
+		# The top is open, so players can fly as high as they like — off-screen
+		# markers track them at the top and sides while they're out of view.
+		var pos: Vector2 = _players[i].global_position
+		if pos.x < -_side_margin or pos.x > _view.x + _side_margin or pos.y > _view.y + _bottom_margin:
 			_ring_out(i)
 
 	_update_hud()

@@ -1,9 +1,10 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=7 format=3 uid="uid://cn5aboaia6w8v"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=8 format=3 uid="uid://cn5aboaia6w8v"]
 
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
 [ext_resource type="Texture2D" uid="uid://b3trsxtrobx05" path="res://data/heroes/kunoichi/idle.png" id="3_tex"]
 [ext_resource type="Texture2D" uid="uid://bgs2bb6m8j8k0" path="res://data/heroes/kunoichi/attack.png" id="4_pose"]
+[ext_resource type="Texture2D" uid="uid://cv1pw68gmg6cu" path="res://data/heroes/kunoichi/kunoichi_walk.png" id="5_walk"]
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")
@@ -34,13 +35,6 @@ script = ExtResource("1_hero")
 hero_name = "Kunoichi"
 description = "A sturdy bruiser. Fast and tanky, hits hard up close."
 speed = 400.0
-jump_velocity = -600.0
-max_jumps = 2
-gravity_scale = 1.4
-fast_fall_scale = 2.0
-dash_speed = 900.0
-dash_duration = 0.15
-dash_cooldown = 0.6
 max_health = 130.0
 defense = 5.0
 knockback_percent_scale = 1.0
@@ -49,6 +43,13 @@ light_attack = SubResource("light")
 heavy_attack = SubResource("heavy")
 attack_texture = ExtResource("4_pose")
 attack_faces_right = true
+walk_texture = ExtResource("5_walk")
+walk_hframes = 4
+walk_vframes = 1
+walk_frames = 4
+walk_fps = 8.0
+walk_sprite_height = 105.0
+walk_faces_right = false
 texture = ExtResource("3_tex")
 faces_right = false
 color = Color(0.3, 0.55, 0.9, 1)

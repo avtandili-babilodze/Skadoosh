@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=9 format=3 uid="uid://voqc2jrwlw2f"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=11 format=3 uid="uid://voqc2jrwlw2f"]
 
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
@@ -6,6 +6,8 @@
 [ext_resource type="Texture2D" uid="uid://b1xcxpblho8ds" path="res://data/heroes/linea/attack.png" id="4_pose"]
 [ext_resource type="Texture2D" uid="uid://cbegcmtg3qwlh" path="res://data/heroes/linea/fireball.png" id="5_fire"]
 [ext_resource type="Texture2D" uid="uid://bryyhjc0o484v" path="res://data/heroes/linea/linea_walking.png" id="6_walk"]
+[ext_resource type="Texture2D" uid="uid://hsqbgxjo770o" path="res://data/heroes/linea/jump.png" id="7_jump"]
+[ext_resource type="Texture2D" uid="uid://c34iccclan1jx" path="res://data/heroes/linea/fall.png" id="8_fall"]
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")
@@ -46,13 +48,6 @@ script = ExtResource("1_hero")
 hero_name = "Linea"
 description = "A nimble glass cannon. Fragile, but zones with fireballs at range."
 speed = 300.0
-jump_velocity = -700.0
-max_jumps = 2
-gravity_scale = 1.5
-fast_fall_scale = 2.0
-dash_speed = 900.0
-dash_duration = 0.15
-dash_cooldown = 0.6
 max_health = 80.0
 defense = 3.0
 knockback_percent_scale = 1.0
@@ -68,6 +63,10 @@ walk_frames = 8
 walk_fps = 12.0
 walk_sprite_height = 130.0
 walk_faces_right = true
+jump_texture = ExtResource("7_jump")
+fall_texture = ExtResource("8_fall")
+air_faces_right = true
+air_sprite_height = 100.0
 texture = ExtResource("3_tex")
 faces_right = false
 color = Color(0.8, 0.4, 0.9, 1)

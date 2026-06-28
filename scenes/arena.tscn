@@ -1,9 +1,10 @@
-[gd_scene load_steps=9 format=3 uid="uid://fbpwehrrhmaj"]
+[gd_scene load_steps=10 format=3 uid="uid://fbpwehrrhmaj"]
 
 [ext_resource type="PackedScene" uid="uid://bmskuclp7mfst" path="res://entities/player/player.tscn" id="1_player"]
 [ext_resource type="Resource" uid="uid://cn5aboaia6w8v" path="res://data/heroes/kunoichi/hero.tres" id="2_kunoichi"]
 [ext_resource type="Resource" uid="uid://voqc2jrwlw2f" path="res://data/heroes/linea/hero.tres" id="3_linea"]
 [ext_resource type="Script" path="res://scenes/arena.gd" id="4_arena"]
+[ext_resource type="Script" path="res://scenes/top_pointers.gd" id="7_ptr"]
 [ext_resource type="Texture2D" uid="uid://cr8pkoevojmlm" path="res://assets/sprites/background.png" id="5_bg"]
 [ext_resource type="Texture2D" uid="uid://clvo7bm0v05xh" path="res://assets/sprites/platform.png" id="6_plat"]
 
@@ -61,6 +62,9 @@ action_attack = &"p2_attack"
 action_attack2 = &"p2_attack2"
 
 [node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="TopPointers" type="Node2D" parent="HUD"]
+script = ExtResource("7_ptr")
 
 [node name="P1" type="Label" parent="HUD"]
 offset_left = 24.0

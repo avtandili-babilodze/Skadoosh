@@ -39,9 +39,12 @@ var damage_taken: float = 0.0
 var _spawn_position: Vector2
 var _invincible_time_left: float = 0.0
 var _jumps_left: int = 0
+var _air_attack_jumps_left: int = 0   # extra air jumps from the heavy-attack key (separate pool)
 var _facing: float = 1.0              # 1 = right, -1 = left
 var _dash_time_left: float = 0.0
 var _dash_cooldown_left: float = 0.0
+var _dodge_time_left: float = 0.0     # stationary dash: invincible + no falling while > 0
+var _dodge_cooldown_left: float = 0.0 # gates how often you can dodge
 var _attack_time_left: float = 0.0
 var _attack_cooldown_left: float = 0.0
 var _attack2_cooldown_left: float = 0.0
@@ -59,6 +62,8 @@ func _ready() -> void:
 		push_warning("%s has no HeroData assigned — using defaults." % name)
 		hero = HeroData.new()
 	_spawn_position = global_position
+	_jumps_left = hero.max_jumps
+	_air_attack_jumps_left = hero.air_attack_jumps
 	_show_idle()
 
 
@@ -66,23 +71,29 @@ func _physics_process(delta: float) -> void:
 	# --- Tick timers ---
 	_dash_cooldown_left = maxf(0.0, _dash_cooldown_left - delta)
 	_dash_time_left = maxf(0.0, _dash_time_left - delta)
+	_dodge_time_left = maxf(0.0, _dodge_time_left - delta)
+	_dodge_cooldown_left = maxf(0.0, _dodge_cooldown_left - delta)
 	_attack_cooldown_left = maxf(0.0, _attack_cooldown_left - delta)
 	_attack2_cooldown_left = maxf(0.0, _attack2_cooldown_left - delta)
 	_attack_lock_left = maxf(0.0, _attack_lock_left - delta)
 	_stun_time_left = maxf(0.0, _stun_time_left - delta)
 
-	# Respawn invincibility: count down and blink the fighter while active.
 	if _invincible_time_left > 0.0:
 		_invincible_time_left = maxf(0.0, _invincible_time_left - delta)
-		modulate.a = 0.35 if int(_invincible_time_left * 10.0) % 2 == 0 else 1.0
-		if _invincible_time_left == 0.0:
-			modulate.a = 1.0
+
+	# Visual feedback: flash bright white while dodging; blink during respawn invincibility.
+	var tint := Color(1.8, 1.8, 1.8) if _dodge_time_left > 0.0 else Color.WHITE
+	if _invincible_time_left > 0.0:
+		tint.a = 0.35 if int(_invincible_time_left * 10.0) % 2 == 0 else 1.0
+	modulate = tint
 
 	if _attack_time_left > 0.0:
 		_attack_time_left -= delta  # pose selector below restores idle/walk when it ends
 
 	# --- Gravity ---
-	if not is_on_floor():
+	if _dodge_time_left > 0.0:
+		velocity.y = 0.0  # dodge: hang in place, immune to falling
+	elif not is_on_floor():
 		var fall := get_gravity() * hero.gravity_scale
 		if Input.is_action_pressed(action_down):
 			fall *= hero.fast_fall_scale  # fast fall
@@ -91,11 +102,13 @@ func _physics_process(delta: float) -> void:
 	# Refill jumps on landing (even while stunned, so you're ready when it ends).
 	if is_on_floor():
 		_jumps_left = hero.max_jumps
+		_air_attack_jumps_left = hero.air_attack_jumps
 
-	# While stunned: no input is read; gravity + knockback momentum still apply.
+	# While stunned or dodging: no input is read; gravity + knockback momentum still apply.
 	var stunned := _stun_time_left > 0.0
+	var dodging := _dodge_time_left > 0.0
 	var direction := 0.0
-	if not stunned:
+	if not stunned and not dodging:
 		# --- Jump (double / multi) ---
 		if Input.is_action_just_pressed(action_jump) and _jumps_left > 0:
 			velocity.y = hero.jump_velocity
@@ -106,22 +119,41 @@ func _physics_process(delta: float) -> void:
 		if direction != 0.0:
 			_facing = signf(direction)
 
-		# --- Dash ---
+		# --- Dash / Dodge ---
+		# A dash with no direction held becomes a dodge (invincible, no falling).
 		if Input.is_action_just_pressed(action_dash) and _dash_cooldown_left == 0.0:
-			_dash_time_left = hero.dash_duration
-			_dash_cooldown_left = hero.dash_cooldown
+			var wants_dodge := direction == 0.0 and hero.dodge_duration > 0.0
+			if wants_dodge:
+				if _dodge_cooldown_left == 0.0:    # dodge has its own cooldown
+					_dash_cooldown_left = hero.dash_cooldown
+					_dodge_time_left = hero.dodge_duration
+					_dodge_cooldown_left = hero.dodge_cooldown
+					velocity = Vector2.ZERO
+			else:
+				_dash_cooldown_left = hero.dash_cooldown
+				_dash_time_left = hero.dash_duration
 
 		# --- Attack ---
-		if Input.is_action_just_pressed(action_attack) and _attack_cooldown_left == 0.0 and _attack_lock_left == 0.0:
-			_use_skill(hero.heavy_attack, true)
+		# In the air, the heavy-attack key acts as an extra jump instead of attacking.
+		if Input.is_action_just_pressed(action_attack):
+			if not is_on_floor():
+				if _air_attack_jumps_left > 0:    # one extra jump, separate from the normal jumps
+					velocity.y = hero.jump_velocity
+					_air_attack_jumps_left -= 1
+			elif _attack_cooldown_left == 0.0 and _attack_lock_left == 0.0:
+				_use_skill(hero.heavy_attack, true)
 		if Input.is_action_just_pressed(action_attack2) and _attack2_cooldown_left == 0.0 and _attack_lock_left == 0.0:
 			_use_skill(hero.light_attack, false)
 
 	# --- Horizontal velocity ---
 	if stunned:
 		pass                                       # locked: keep the knockback momentum
+	elif _dodge_time_left > 0.0:
+		velocity.x = 0.0                           # dodge: hold position
 	elif _dash_time_left > 0.0:
 		velocity.x = _facing * hero.dash_speed     # dash overrides movement
+	elif _attack_time_left > 0.0 and is_on_floor():
+		velocity.x = 0.0                           # rooted while attacking on the ground (air attacks keep moving)
 	elif direction != 0.0:
 		velocity.x = direction * hero.speed
 	else:
@@ -129,7 +161,9 @@ func _physics_process(delta: float) -> void:
 
 	# --- Pose selection (don't override the attack pose while it plays) ---
 	if _attack_time_left <= 0.0:
-		if is_on_floor() and direction != 0.0 and hero.walk_texture != null:
+		if not is_on_floor() and (hero.jump_texture != null or hero.fall_texture != null):
+			_show_air()
+		elif is_on_floor() and direction != 0.0 and hero.walk_texture != null:
 			_show_walk(delta)
 		else:
 			_show_idle()
@@ -191,6 +225,8 @@ func _spawn_projectile(skill: AttackData) -> void:
 func take_hit(damage: float, base_knockback: float, dir: float, up_ratio: float) -> void:
 	if _invincible_time_left > 0.0:
 		return  # just respawned — immune for now
+	if _dodge_time_left > 0.0:
+		return  # dodging — immune to damage and knockback
 	# Defense (0–10) mitigates incoming %: 0 = full damage, 10 = halved.
 	var mitigation := clampf(hero.defense, 0.0, 10.0) / 20.0
 	damage_taken += damage * (1.0 - mitigation)
@@ -210,6 +246,9 @@ func respawn() -> void:
 	velocity = Vector2.ZERO
 	damage_taken = 0.0
 	_jumps_left = hero.max_jumps
+	_air_attack_jumps_left = hero.air_attack_jumps
+	_dodge_time_left = 0.0
+	_dodge_cooldown_left = 0.0
 	_dash_time_left = 0.0
 	_attack_time_left = 0.0
 	_dash_cooldown_left = 0.0
@@ -263,15 +302,33 @@ func _show_walk(delta: float) -> void:
 		_sprite.frame = int(_anim_time * hero.walk_fps) % count
 
 
-## Swap the sprite to a single-frame `tex`, scaled to hero.sprite_height.
-func _show_texture(tex: Texture2D, faces_right: bool) -> void:
+## Choose the air pose by vertical motion: rising = jump pose, falling = fall pose.
+## Either texture falls back to the other (then to idle) so a half-set hero still works.
+func _show_air() -> void:
+	var rising := velocity.y < 0.0
+	var tex: Texture2D = hero.jump_texture if rising else hero.fall_texture
+	if tex == null:
+		tex = hero.fall_texture if rising else hero.jump_texture
+	if tex == null:
+		_show_idle()
+		return
+	var want := "jump" if rising else "fall"
+	if _pose == want:
+		return
+	_pose = want
+	_show_texture(tex, hero.air_faces_right, hero.air_sprite_height)
+
+
+## Swap the sprite to a single-frame `tex`. Scaled to `height` px, or hero.sprite_height if <= 0.
+func _show_texture(tex: Texture2D, faces_right: bool, height: float = -1.0) -> void:
 	_sprite.texture = tex
 	_sprite.hframes = 1
 	_sprite.vframes = 1
 	_sprite.frame = 0
 	var h := tex.get_height()
 	if h > 0:
-		var s := hero.sprite_height / h
+		var target_h := height if height > 0.0 else hero.sprite_height
+		var s := target_h / h
 		_sprite.scale = Vector2(s, s)
 	_art_faces_right = faces_right
 	_sprite.visible = true

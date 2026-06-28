@@ -16,6 +16,8 @@ extends Resource
 @export var jump_velocity: float = -650.0
 ## Total jumps available before landing. 2 = double jump, 3 = triple, etc.
 @export var max_jumps: int = 2
+## Extra mid-air jumps from the heavy-attack key, separate from max_jumps. Refills on landing.
+@export var air_attack_jumps: int = 1
 ## Multiplies gravity. 1.0 = normal fall, higher = falls faster/heavier.
 @export var gravity_scale: float = 1.4
 ## Extra gravity multiplier while holding "down" in the air (fast fall).
@@ -23,9 +25,13 @@ extends Resource
 ## Horizontal burst speed during a dash, in pixels/second.
 @export var dash_speed: float = 900.0
 ## How long the dash burst lasts, in seconds.
-@export var dash_duration: float = 0.15
+@export var dash_duration: float = 0.1125
 ## Cooldown before the player can dash again, in seconds.
-@export var dash_cooldown: float = 0.6
+@export var dash_cooldown: float = 0.15
+## Dodge (a stationary dash): seconds of invincibility + no falling. 0 disables it.
+@export var dodge_duration: float = 0.5
+## Cooldown before you can dodge again, in seconds (separate from the dash cooldown).
+@export var dodge_cooldown: float = 1.5
 
 @export_group("Combat")
 @export var max_health: float = 100.0
@@ -48,6 +54,16 @@ extends Resource
 @export var attack_texture: Texture2D
 ## Set FALSE if the attack art is drawn facing left.
 @export var attack_faces_right: bool = true
+
+@export_group("Air Poses")
+## Pose shown while rising (after a jump). Falls back to the idle texture if empty.
+@export var jump_texture: Texture2D
+## Pose shown while falling (descending through the air). Falls back to jump/idle if empty.
+@export var fall_texture: Texture2D
+## Set FALSE if the air art is drawn facing left.
+@export var air_faces_right: bool = true
+## On-screen height of an air pose, in px. Tune so it matches the idle size.
+@export var air_sprite_height: float = 110.0
 
 @export_group("Walk Animation")
 ## Optional walk-cycle sprite sheet. If empty, the hero just uses the idle pose.
