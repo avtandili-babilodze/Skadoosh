@@ -4,7 +4,21 @@ A local 2-player platform fighter (Brawlhalla-style) made in Godot 4.3.
 Knock your opponent off the stage — the more damage they've taken (the **%** in the
 top corners), the farther they fly, until they ring out.
 
-## Play it (one click)
+## Download & play (Windows)
+
+The easiest way — no install, no setup:
+
+1. Go to the **[Releases page](https://github.com/avtandili-babilodze/Skadoosh/releases/latest)**.
+2. Under **Assets**, click **`Skadoosh.exe`** to download it (~85 MB).
+3. **Double-click `Skadoosh.exe`** to play.
+
+> If Windows shows a blue **"Windows protected your PC"** box, click
+> **More info → Run anyway**. This happens because the game isn't code-signed;
+> it's safe to run.
+
+**Direct download:** [Skadoosh.exe](https://github.com/avtandili-babilodze/Skadoosh/releases/latest/download/Skadoosh.exe)
+
+## Run from source (Linux / macOS, or to develop)
 
 Download/clone this repo, then:
 
