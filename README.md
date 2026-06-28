@@ -1,7 +1,8 @@
 # Skadoosh
 
 A local 2-player platform fighter (Brawlhalla-style) made in Godot 4.3.
-Knock your opponent off the stage — the more damage they've taken, the farther they fly.
+Knock your opponent off the stage — the more damage they've taken (the **%** in the
+top corners), the farther they fly, until they ring out.
 
 ## Play it (one click)
 
@@ -13,6 +14,9 @@ Download/clone this repo, then:
 The first launch downloads Godot 4.3 automatically into a local `.godot-bin/` folder
 (~70 MB, one time). After that it starts instantly. Nothing else to install.
 
+> **Auto-update:** each launch checks GitHub for a newer version and updates itself
+> before starting (it just plays the current version if you're offline).
+
 > **macOS note:** if it's blocked as "unidentified developer", allow it once in
 > *System Settings → Privacy & Security*, then run `./run.sh` again.
 
@@ -23,16 +27,31 @@ The first launch downloads Godot 4.3 automatically into a local `.godot-bin/` fo
 
 ## Controls
 
-| Action     | Player 1 (Kunoichi) | Player 2 (Mage) |
-|------------|---------------------|-----------------|
-| Move       | `A` / `D`           | `←` / `→`       |
-| Jump (x2)  | `W`                 | `↑`             |
-| Fast-fall  | `S`                 | `↓`             |
-| Dash       | `Shift`             | `Ctrl`          |
-| Attack     | `F`                 | `/`             |
+| Action        | Player 1 (Kunoichi) | Player 2 (Linea) |
+|---------------|---------------------|------------------|
+| Move          | `A` / `D`           | `←` / `→`        |
+| Jump (double) | `W`                 | `↑`              |
+| Fast-fall     | `S`                 | `↓`              |
+| Dash          | `Shift`             | `Ctrl`           |
+| Heavy attack  | `F`                 | `/`              |
+| Light attack  | `G`                 | `'`              |
 
 Win by knocking the other fighter off the stage 3 times. Press **Enter** to rematch.
 
+## The fighters
+
+Each hero is data-driven (`data/heroes/<name>/hero.tres`) with its own speed,
+defense, walk animation, and two skills — a quick **light** attack and a stronger
+**heavy** attack, each with its own damage and knockback.
+
+- **Kunoichi** — a fast, tanky bruiser. Hits hard up close with melee light/heavy strikes.
+- **Linea** — a fragile glass cannon. Zones from range: a big **Fireball** (heavy) and
+  a quick close-range **Fire Jab** (light). She also has an animated walk cycle.
+
+> Want to tweak balance or add a hero? Edit the numbers in
+> `data/heroes/<name>/hero.tres` — no code needed. New heroes are just a new folder.
+
 ## Requirements
 
-- A 64-bit Windows, Linux, or macOS machine with an internet connection (for the first-run download).
+- A 64-bit Windows, Linux, or macOS machine with an internet connection
+  (for the first-run download and auto-update).
