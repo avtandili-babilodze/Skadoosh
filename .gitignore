@@ -5,6 +5,9 @@
 # Auto-downloaded Godot binary (fetched by run.sh / run.bat)
 .godot-bin/
 
+# Exported game builds (regenerable; distribute via Releases, not git)
+/build/
+
 # Launcher state / logs (per-machine, not part of the project)
 .skadoosh_version
 skadoosh-log.txt
