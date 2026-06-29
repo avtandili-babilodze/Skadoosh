@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cv1pw68gmg6cu"
-path="res://.godot/imported/kunoichi_walk.png-d2bff802692bfce2cbfb7752c340f8ac.ctex"
+uid="uid://clji5ph0fndvp"
+path="res://.godot/imported/kunoichi_jumping.png-1c8d48dd3c56176794920137ffa06123.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://data/heroes/kunoichi/kunoichi_walk.png"
-dest_files=["res://.godot/imported/kunoichi_walk.png-d2bff802692bfce2cbfb7752c340f8ac.ctex"]
+source_file="res://data/heroes/kunoichi/kunoichi_jumping.png"
+dest_files=["res://.godot/imported/kunoichi_jumping.png-1c8d48dd3c56176794920137ffa06123.ctex"]
 
 [params]
 

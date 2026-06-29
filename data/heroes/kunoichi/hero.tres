@@ -1,10 +1,12 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=8 format=3 uid="uid://cn5aboaia6w8v"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=10 format=3 uid="uid://cn5aboaia6w8v"]
 
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
 [ext_resource type="Texture2D" uid="uid://b3trsxtrobx05" path="res://data/heroes/kunoichi/idle.png" id="3_tex"]
 [ext_resource type="Texture2D" uid="uid://bgs2bb6m8j8k0" path="res://data/heroes/kunoichi/attack.png" id="4_pose"]
-[ext_resource type="Texture2D" uid="uid://cv1pw68gmg6cu" path="res://data/heroes/kunoichi/kunoichi_walk.png" id="5_walk"]
+[ext_resource type="Texture2D" uid="uid://dlbbu1neunsir" path="res://data/heroes/kunoichi/kunoichi_walking_stances.png" id="5_walk"]
+[ext_resource type="Texture2D" uid="uid://clji5ph0fndvp" path="res://data/heroes/kunoichi/kunoichi_jumping.png" id="6_jump"]
+[ext_resource type="Texture2D" uid="uid://fbsvtcs00s66" path="res://data/heroes/kunoichi/kunoichi_falling.png" id="7_fall"]
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")
@@ -43,13 +45,17 @@ light_attack = SubResource("light")
 heavy_attack = SubResource("heavy")
 attack_texture = ExtResource("4_pose")
 attack_faces_right = true
+jump_texture = ExtResource("6_jump")
+fall_texture = ExtResource("7_fall")
+air_faces_right = false
+air_sprite_height = 110.0
 walk_texture = ExtResource("5_walk")
 walk_hframes = 4
 walk_vframes = 1
 walk_frames = 4
 walk_fps = 8.0
 walk_sprite_height = 105.0
-walk_faces_right = false
+walk_faces_right = true
 texture = ExtResource("3_tex")
 faces_right = false
 color = Color(0.3, 0.55, 0.9, 1)
