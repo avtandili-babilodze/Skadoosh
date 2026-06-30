@@ -20,6 +20,8 @@ var _players: Array = []   # ordered left-to-right
 var _lives: Array = []     # parallel to _players
 var _icons: Array = []     # hero icon shown in each player's HUD corner (parallel to _players)
 var _game_over: bool = false
+var _music_on: bool = true # toggled by the HUD button or the "7" key
+var _music_button: Button
 
 const HUD_ICON_SIZE := 96.0   # on-screen size of the HUD hero icon, in px
 const HUD_MARGIN := 24.0      # gap from the screen corner
@@ -54,6 +56,7 @@ func _ready() -> void:
 	# Loop the battle music for the whole match. On restart the scene reloads, so
 	# _ready runs again and the music starts over from the top.
 	_music.play()
+	_build_music_button()
 
 
 ## Places each player's hero icon in their HUD corner (leftmost player → top-left,
@@ -78,6 +81,40 @@ func _build_hud_icons() -> void:
 		if i < labels.size():
 			labels[i].offset_top = HUD_MARGIN + HUD_ICON_SIZE + 8.0
 			labels[i].offset_bottom = labels[i].offset_top + 80.0
+
+
+## A small mute/unmute button under Player 1's HUD cluster (icon + % text).
+func _build_music_button() -> void:
+	_music_button = Button.new()
+	_music_button.focus_mode = Control.FOCUS_NONE   # don't steal keyboard focus from the game
+	_music_button.add_theme_font_size_override("font_size", 18)
+	_music_button.custom_minimum_size = Vector2(130, 34)
+	_music_button.position = Vector2(HUD_MARGIN, HUD_MARGIN + HUD_ICON_SIZE + 92.0)
+	_music_button.pressed.connect(func(): _set_music(not _music_on))
+	$HUD.add_child(_music_button)
+	_refresh_music_button()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# "7" toggles the music too (physical key, so it's layout-independent).
+	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_7:
+		_set_music(not _music_on)
+
+
+func _set_music(on: bool) -> void:
+	_music_on = on
+	if on:
+		if not _music.playing:
+			_music.play()
+		_music.stream_paused = false
+	else:
+		_music.stream_paused = true
+	_refresh_music_button()
+
+
+func _refresh_music_button() -> void:
+	if _music_button != null:
+		_music_button.text = "♪ Music: On" if _music_on else "♪ Music: Off"
 
 
 func _physics_process(_delta: float) -> void:
