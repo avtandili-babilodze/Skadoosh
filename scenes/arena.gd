@@ -17,7 +17,11 @@ var _side_margin: float    # how far off the left/right edges a player may go be
 var _bottom_margin: float  # how far below the screen a player may fall before ring-out
 var _players: Array = []   # ordered left-to-right
 var _lives: Array = []     # parallel to _players
+var _icons: Array = []     # hero icon shown in each player's HUD corner (parallel to _players)
 var _game_over: bool = false
+
+const HUD_ICON_SIZE := 96.0   # on-screen size of the HUD hero icon, in px
+const HUD_MARGIN := 24.0      # gap from the screen corner
 
 
 func _enter_tree() -> void:
@@ -43,8 +47,33 @@ func _ready() -> void:
 	for _p in _players:
 		_lives.append(starting_lives)
 
+	_build_hud_icons()
 	_message.hide()
 	_update_hud()
+
+
+## Places each player's hero icon in their HUD corner (leftmost player → top-left,
+## rightmost → top-right) and moves the damage-% label to sit just below it.
+func _build_hud_icons() -> void:
+	var labels: Array = [_label_p1, _label_p2]
+	for i in _players.size():
+		var icon := TextureRect.new()
+		icon.texture = _players[i].hero.icon
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.custom_minimum_size = Vector2(HUD_ICON_SIZE, HUD_ICON_SIZE)
+		icon.size = Vector2(HUD_ICON_SIZE, HUD_ICON_SIZE)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if i == 0:
+			icon.position = Vector2(HUD_MARGIN, HUD_MARGIN)              # top-left
+		else:
+			icon.position = Vector2(_view.x - HUD_MARGIN - HUD_ICON_SIZE, HUD_MARGIN)  # top-right
+		_message.get_parent().add_child(icon)
+		_icons.append(icon)
+		# Drop the label just below the icon so the % reads under the portrait.
+		if i < labels.size():
+			labels[i].offset_top = HUD_MARGIN + HUD_ICON_SIZE + 8.0
+			labels[i].offset_bottom = labels[i].offset_top + 80.0
 
 
 func _physics_process(_delta: float) -> void:
@@ -98,4 +127,4 @@ func _update_hud() -> void:
 
 func _hud_line(i: int) -> String:
 	var p = _players[i]
-	return "%s\n%d%%   Lives: %d" % [p.hero.hero_name, int(p.damage_taken), _lives[i]]
+	return "%d%%\nLives: %d" % [int(p.damage_taken), _lives[i]]
