@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=10 format=3 uid="uid://cn5aboaia6w8v"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=11 format=3 uid="uid://cn5aboaia6w8v"]
 
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" uid="uid://dlbbu1neunsir" path="res://data/heroes/kunoichi/kunoichi_walking_stances.png" id="5_walk"]
 [ext_resource type="Texture2D" uid="uid://clji5ph0fndvp" path="res://data/heroes/kunoichi/kunoichi_jumping.png" id="6_jump"]
 [ext_resource type="Texture2D" uid="uid://fbsvtcs00s66" path="res://data/heroes/kunoichi/kunoichi_falling.png" id="7_fall"]
+[ext_resource type="Texture2D" uid="uid://bbq2pgd0rpdvc" path="res://data/heroes/kunoichi/kunoichi_icon.png" id="8_icon"]
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")
@@ -35,6 +36,7 @@ height = 95.0
 [resource]
 script = ExtResource("1_hero")
 hero_name = "Kunoichi"
+icon = ExtResource("8_icon")
 description = "A sturdy bruiser. Fast and tanky, hits hard up close."
 speed = 400.0
 max_health = 130.0

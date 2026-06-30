@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=11 format=3 uid="uid://voqc2jrwlw2f"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=12 format=3 uid="uid://voqc2jrwlw2f"]
 
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://bryyhjc0o484v" path="res://data/heroes/linea/linea_walking.png" id="6_walk"]
 [ext_resource type="Texture2D" uid="uid://hsqbgxjo770o" path="res://data/heroes/linea/jump.png" id="7_jump"]
 [ext_resource type="Texture2D" uid="uid://c34iccclan1jx" path="res://data/heroes/linea/fall.png" id="8_fall"]
+[ext_resource type="Texture2D" uid="uid://y2m64fll86id" path="res://data/heroes/linea/linea_icon.png" id="9_icon"]
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")
@@ -46,6 +47,7 @@ projectile_spawn_offset = Vector2(80, -8)
 [resource]
 script = ExtResource("1_hero")
 hero_name = "Linea"
+icon = ExtResource("9_icon")
 description = "A nimble glass cannon. Fragile, but zones with fireballs at range."
 speed = 300.0
 max_health = 80.0

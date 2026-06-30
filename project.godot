@@ -11,13 +11,14 @@ config_version=5
 [application]
 
 config/name="Skadoosh"
-run/main_scene="res://scenes/arena.tscn"
+run/main_scene="res://scenes/character_select.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
 
 [autoload]
 
 GameInput="*res://autoload/game_input.gd"
+Roster="*res://autoload/roster.gd"
 
 [display]
 

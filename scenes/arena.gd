@@ -20,6 +20,17 @@ var _lives: Array = []     # parallel to _players
 var _game_over: bool = false
 
 
+func _enter_tree() -> void:
+	# Apply the picks made on the character-select screen. This runs before the
+	# Player children's _ready (parent enters the tree first), so the override
+	# lands before they read their hero. When the arena is launched directly the
+	# picks are null and the heroes wired into the scene are kept.
+	if Roster.p1_hero != null:
+		$Player1.hero = Roster.p1_hero
+	if Roster.p2_hero != null:
+		$Player2.hero = Roster.p2_hero
+
+
 func _ready() -> void:
 	_view = get_viewport_rect().size
 	# How far off-screen you may travel before ringing out; an edge marker tracks

@@ -82,6 +82,8 @@ extends Resource
 @export var walk_faces_right: bool = true
 
 @export_group("Appearance")
+## Icon shown for this hero on the character-select screen. Square art works best.
+@export var icon: Texture2D
 ## Avatar image for this hero. If set, it's shown instead of the color box.
 ## Drop a PNG/JPG into res://assets/sprites/ and assign it here.
 @export var texture: Texture2D
