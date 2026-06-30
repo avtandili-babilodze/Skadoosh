@@ -11,6 +11,7 @@ extends Node2D
 @onready var _label_p1: Label = $HUD/P1
 @onready var _label_p2: Label = $HUD/P2
 @onready var _message: Label = $HUD/Message
+@onready var _music: AudioStreamPlayer = $Music
 
 var _view: Vector2         # viewport size in px
 var _side_margin: float    # how far off the left/right edges a player may go before ring-out
@@ -50,6 +51,9 @@ func _ready() -> void:
 	_build_hud_icons()
 	_message.hide()
 	_update_hud()
+	# Loop the battle music for the whole match. On restart the scene reloads, so
+	# _ready runs again and the music starts over from the top.
+	_music.play()
 
 
 ## Places each player's hero icon in their HUD corner (leftmost player → top-left,
@@ -111,6 +115,7 @@ func _check_game_over() -> void:
 			alive.append(i)
 	if alive.size() <= 1:
 		_game_over = true
+		_music.stop()   # match's over — cut the music until someone restarts
 		if alive.size() == 1:
 			_message.text = "%s WINS!\nPress Enter to restart" % _players[alive[0]].hero.hero_name
 		else:

@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://fbpwehrrhmaj"]
+[gd_scene load_steps=11 format=3 uid="uid://fbpwehrrhmaj"]
 
 [ext_resource type="PackedScene" uid="uid://bmskuclp7mfst" path="res://entities/player/player.tscn" id="1_player"]
 [ext_resource type="Resource" uid="uid://cn5aboaia6w8v" path="res://data/heroes/kunoichi/hero.tres" id="2_kunoichi"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scenes/top_pointers.gd" id="7_ptr"]
 [ext_resource type="Texture2D" uid="uid://cr8pkoevojmlm" path="res://assets/sprites/background.png" id="5_bg"]
 [ext_resource type="Texture2D" uid="uid://clvo7bm0v05xh" path="res://assets/sprites/platform.png" id="6_plat"]
+[ext_resource type="AudioStream" uid="uid://c3rv3okvmaqnq" path="res://assets/audio/music/Clavar La Espada.mp3" id="8_music"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ground"]
 size = Vector2(1180, 40)
@@ -16,6 +17,10 @@ size = Vector2(429, 25)
 
 [node name="Arena" type="Node2D"]
 script = ExtResource("4_arena")
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("8_music")
+bus = &"Master"
 
 [node name="Background" type="Sprite2D" parent="."]
 position = Vector2(576, 324)
