@@ -24,6 +24,12 @@ _download() { # _download URL OUTFILE
 # problem (offline, no unzip, etc.) so the game always still launches.
 auto_update() {
     [ -n "$SKADOOSH_NOUPDATE" ] && return 0   # already updated this run
+    # A Git checkout is a developer workspace, not an installed release. Never copy
+    # remote files over it: doing so could destroy uncommitted work.
+    if [ -d "$DIR/.git" ]; then
+        echo "Developer checkout detected - automatic source updates are disabled."
+        return 0
+    fi
     command -v unzip >/dev/null 2>&1 || return 0
     echo "Checking for updates..."
     local api remote local_sha

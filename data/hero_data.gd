@@ -12,6 +12,10 @@ extends Resource
 @export_group("Movement")
 ## Horizontal run speed, in pixels/second.
 @export var speed: float = 350.0
+## How quickly horizontal velocity changes while grounded, in pixels/second².
+@export var ground_acceleration: float = 3200.0
+## Air steering acceleration. Lower values preserve launch momentum for longer.
+@export var air_acceleration: float = 850.0
 ## Upward velocity applied on jump. More negative = higher jump.
 @export var jump_velocity: float = -650.0
 ## Total jumps available before landing. 2 = double jump, 3 = triple, etc.
@@ -34,7 +38,6 @@ extends Resource
 @export var dodge_cooldown: float = 1.5
 
 @export_group("Combat")
-@export var max_health: float = 100.0
 ## Damage-resistance rating, 0 (none) to 10 (halves incoming %). Higher = tankier.
 @export_range(0.0, 10.0) var defense: float = 0.0
 ## How much the accumulated damage % (shown in the HUD) amplifies knockback:
@@ -50,9 +53,9 @@ extends Resource
 @export var heavy_attack: AttackData
 
 @export_group("Attack Appearance")
-## Pose shown while attacking (shared by both skills). Falls back to the idle texture if empty.
+## Legacy/shared attack pose used when a skill has no animation sheet of its own.
 @export var attack_texture: Texture2D
-## Set FALSE if the attack art is drawn facing left.
+## Set FALSE if the fallback attack art is drawn facing left.
 @export var attack_faces_right: bool = true
 
 @export_group("Air Poses")
@@ -60,6 +63,15 @@ extends Resource
 @export var jump_texture: Texture2D
 ## Pose shown while falling (descending through the air). Falls back to jump/idle if empty.
 @export var fall_texture: Texture2D
+## Grid/playback settings let jump and fall/dive use real animation sheets.
+@export var jump_hframes: int = 1
+@export var jump_vframes: int = 1
+@export var jump_frames: int = 0
+@export var jump_fps: float = 10.0
+@export var fall_hframes: int = 1
+@export var fall_vframes: int = 1
+@export var fall_frames: int = 0
+@export var fall_fps: float = 10.0
 ## Set FALSE if the air art is drawn facing left.
 @export var air_faces_right: bool = true
 ## On-screen height of an air pose, in px. Tune so it matches the idle size.

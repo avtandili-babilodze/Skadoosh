@@ -1,13 +1,15 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=11 format=3 uid="uid://cn5aboaia6w8v"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=13 format=3 uid="uid://cn5aboaia6w8v"]
 
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
 [ext_resource type="Texture2D" uid="uid://b3trsxtrobx05" path="res://data/heroes/kunoichi/idle.png" id="3_tex"]
 [ext_resource type="Texture2D" uid="uid://bgs2bb6m8j8k0" path="res://data/heroes/kunoichi/attack.png" id="4_pose"]
-[ext_resource type="Texture2D" uid="uid://dlbbu1neunsir" path="res://data/heroes/kunoichi/kunoichi_walking_stances.png" id="5_walk"]
+[ext_resource type="Texture2D" path="res://data/heroes/kunoichi/kunoichi_walk_sheet_v2.png" id="5_walk"]
 [ext_resource type="Texture2D" uid="uid://clji5ph0fndvp" path="res://data/heroes/kunoichi/kunoichi_jumping.png" id="6_jump"]
 [ext_resource type="Texture2D" uid="uid://fbsvtcs00s66" path="res://data/heroes/kunoichi/kunoichi_falling.png" id="7_fall"]
 [ext_resource type="Texture2D" uid="uid://bbq2pgd0rpdvc" path="res://data/heroes/kunoichi/kunoichi_icon.png" id="8_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/kunoichi/light_attack_sheet.png" id="9_light_anim"]
+[ext_resource type="Texture2D" path="res://data/heroes/kunoichi/heavy_attack_sheet.png" id="10_heavy_anim"]
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")
@@ -16,8 +18,16 @@ kind = 0
 damage = 7.0
 knockback = 320.0
 knockback_up_ratio = 0.16
-duration = 0.2
+startup_time = 0.05
+active_time = 0.08
+recovery_time = 0.12
+post_end_lag = 0.3
 cooldown = 0.35
+animation_texture = ExtResource("9_light_anim")
+animation_hframes = 4
+animation_frames = 4
+animation_sprite_height = 160.0
+animation_faces_right = true
 reach = 100.0
 height = 90.0
 
@@ -28,8 +38,16 @@ kind = 0
 damage = 16.0
 knockback = 600.0
 knockback_up_ratio = 0.22
-duration = 0.3
+startup_time = 0.14
+active_time = 0.10
+recovery_time = 0.22
+post_end_lag = 0.5
 cooldown = 0.75
+animation_texture = ExtResource("10_heavy_anim")
+animation_hframes = 4
+animation_frames = 4
+animation_sprite_height = 180.0
+animation_faces_right = true
 reach = 110.0
 height = 95.0
 
@@ -39,7 +57,8 @@ hero_name = "Kunoichi"
 icon = ExtResource("8_icon")
 description = "A sturdy bruiser. Fast and tanky, hits hard up close."
 speed = 400.0
-max_health = 130.0
+ground_acceleration = 3600.0
+air_acceleration = 900.0
 defense = 5.0
 knockback_percent_scale = 1.0
 min_attack_interval = 0.0
@@ -56,7 +75,7 @@ walk_hframes = 4
 walk_vframes = 1
 walk_frames = 4
 walk_fps = 8.0
-walk_sprite_height = 105.0
+walk_sprite_height = 135.0
 walk_faces_right = true
 texture = ExtResource("3_tex")
 faces_right = false

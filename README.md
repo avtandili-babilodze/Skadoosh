@@ -28,8 +28,8 @@ Download/clone this repo, then:
 The first launch downloads Godot 4.3 automatically into a local `.godot-bin/` folder
 (~70 MB, one time). After that it starts instantly. Nothing else to install.
 
-> **Auto-update:** each launch checks GitHub for a newer version and updates itself
-> before starting (it just plays the current version if you're offline).
+> **Auto-update:** downloaded source releases check GitHub for a newer version before
+> starting. Git clones never auto-update, so local development work cannot be overwritten.
 
 > **macOS note:** if it's blocked as "unidentified developer", allow it once in
 > *System Settings → Privacy & Security*, then run `./run.sh` again.
@@ -41,29 +41,77 @@ The first launch downloads Godot 4.3 automatically into a local `.godot-bin/` fo
 
 ## Controls
 
-| Action        | Player 1 (Kunoichi) | Player 2 (Linea) |
-|---------------|---------------------|------------------|
-| Move          | `A` / `D`           | `←` / `→`        |
-| Jump (double) | `W`                 | `↑`              |
-| Fast-fall     | `S`                 | `↓`              |
-| Dash          | `Shift`             | `Ctrl`           |
-| Heavy attack  | `F`                 | `/`              |
-| Light attack  | `G`                 | `'`              |
+| Action        | Player 1   | Player 2   |
+|---------------|------------|------------|
+| Move          | `A` / `D`  | `←` / `→`  |
+| Jump (double) | `W`        | `↑`        |
+| Fast-fall     | `S`        | `↓`        |
+| Dash          | `Shift`    | `Ctrl`     |
+| Heavy attack  | `F`        | `/`        |
+| Light attack  | `G`        | `'`        |
 
 Win by knocking the other fighter off the stage 3 times. Press **Enter** to rematch.
 
+## Character selection
+
+The selection screen builds itself from `Roster.heroes`. Fighter cards include
+their names and automatically wrap into a responsive multi-row grid. Large rosters
+can be scrolled vertically, and the grid automatically scrolls to keep the most
+recently moved player cursor visible.
+
+- Player 1 uses `A` / `D` to choose, `W` to lock in, and `S` to unlock.
+- Player 2 uses `←` / `→` to choose, `↑` to lock in, and `↓` to unlock.
+- Both players may select the same fighter.
+
+Adding another resource path to `HERO_PATHS` in `autoload/roster.gd` automatically
+adds its card to this grid; the menu does not require per-character layout changes.
+
 ## The fighters
 
-Each hero is data-driven (`data/heroes/<name>/hero.tres`) with its own speed,
-defense, walk animation, and two skills — a quick **light** attack and a stronger
-**heavy** attack, each with its own damage and knockback.
+Each hero is data-driven (`data/heroes/<name>/hero.tres`) with its own movement,
+defense, animation, and two skills. Attacks have independently tunable startup,
+active, recovery, post-skill lock, damage, knockback, cooldown, and hitbox/projectile
+values. Light attacks lock control for 0.3 seconds after finishing; heavy attacks
+lock control for 0.5 seconds.
 
-- **Kunoichi** — a fast, tanky bruiser. Hits hard up close with melee light/heavy strikes.
+- **Kunoichi** — a fast, tanky bruiser with a four-pose walk cycle and distinct
+  light/heavy sword animations.
 - **Linea** — a fragile glass cannon. Zones from range: a big **Fireball** (heavy) and
-  a quick close-range **Fire Jab** (light). She also has an animated walk cycle.
+  a quick close-range **Fire Jab** (light), each with its own casting animation.
+- **Primordial Demon** — a heavy dark-matter fighter with a close claw slash and a
+  delayed spike eruption about four game meters in front of her.
+- **Waterbender** — a flowing ranged fighter with a three-meter water spit and a
+  four-meter wave that grows in size and scales from 1× to 2× damage as it travels.
 
 > Want to tweak balance or add a hero? Edit the numbers in
-> `data/heroes/<name>/hero.tres` — no code needed. New heroes are just a new folder.
+> `data/heroes/<name>/hero.tres` — no player-code changes are needed. Add a new
+> hero's resource path to `autoload/roster.gd` to make it selectable.
+
+### Adding character artwork
+
+Create a folder such as `data/heroes/my_hero/` and put the character PNG files
+there. A complete fighter can provide:
+
+- `idle.png` and `icon.png`
+- a walk sprite sheet
+- jump and fall/dive poses or sprite sheets
+- separate light- and heavy-attack sprite sheets
+- optional projectile or ground-spike effect art for special attacks
+
+Sprite sheets should have a transparent background, equal-sized cells, consistent
+character scale/baseline, and no artwork crossing between cells. Copy an existing
+`hero.tres`, replace its texture paths and animation grid values, then add that
+resource to `HERO_PATHS` in `autoload/roster.gd`.
+
+## Tests
+
+With Godot 4.3 available, run the dependency-free headless suite with:
+
+```sh
+godot --headless --path . tests/test_runner.tscn
+```
+
+The release workflow runs the same suite before exporting the Windows build.
 
 ## Requirements
 

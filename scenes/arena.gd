@@ -2,9 +2,10 @@ extends Node2D
 ## Arena manager: handles ring-outs (falling off the screen), lives/stocks,
 ## respawning, and a simple HUD showing each fighter's damage % and lives.
 
-## How far beyond the screen edge a fighter must travel to be "ringed out".
-## Small = leaving the screen is quickly lethal (no wandering off invisibly).
-@export var kill_margin: float = 90.0
+## Horizontal distance beyond either side before a ring-out.
+@export var side_kill_margin: float = 500.0
+## Distance below the viewport before a ring-out. The top intentionally stays open.
+@export var bottom_kill_margin: float = 1000.0
 ## Lives (stocks) each fighter starts with.
 @export var starting_lives: int = 3
 
@@ -14,8 +15,6 @@ extends Node2D
 @onready var _music: AudioStreamPlayer = $Music
 
 var _view: Vector2         # viewport size in px
-var _side_margin: float    # how far off the left/right edges a player may go before ring-out
-var _bottom_margin: float  # how far below the screen a player may fall before ring-out
 var _players: Array = []   # ordered left-to-right
 var _lives: Array = []     # parallel to _players
 var _icons: Array = []     # hero icon shown in each player's HUD corner (parallel to _players)
@@ -40,15 +39,12 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_view = get_viewport_rect().size
-	# How far off-screen you may travel before ringing out; an edge marker tracks
-	# the player while they're out there. The top is fully open (no limit).
-	_side_margin = 500.0
-	_bottom_margin = 1000.0
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
 
 	_players = get_tree().get_nodes_in_group("players")
 	_players.sort_custom(func(a, b): return a.global_position.x < b.global_position.x)
 	for _p in _players:
-		_lives.append(starting_lives)
+		_lives.append(maxi(1, starting_lives))
 
 	_build_hud_icons()
 	_message.hide()
@@ -57,6 +53,23 @@ func _ready() -> void:
 	# _ready runs again and the music starts over from the top.
 	_music.play()
 	_build_music_button()
+	_update_responsive_layout()
+
+
+func _on_viewport_size_changed() -> void:
+	_view = get_viewport_rect().size
+	_update_responsive_layout()
+
+
+func _update_responsive_layout() -> void:
+	if _icons.size() >= 2:
+		_icons[1].position = Vector2(_view.x - HUD_MARGIN - HUD_ICON_SIZE, HUD_MARGIN)
+	# The original scene is authored at 1152×648. Keep the right HUD and center
+	# message attached to their semantic positions when the window changes size.
+	_label_p2.offset_left = _view.x - 420.0
+	_label_p2.offset_right = _view.x - HUD_MARGIN
+	_message.offset_left = (_view.x - 500.0) * 0.5
+	_message.offset_right = _message.offset_left + 500.0
 
 
 ## Places each player's hero icon in their HUD corner (leftmost player → top-left,
@@ -130,7 +143,9 @@ func _physics_process(_delta: float) -> void:
 		# The top is open, so players can fly as high as they like — off-screen
 		# markers track them at the top and sides while they're out of view.
 		var pos: Vector2 = _players[i].global_position
-		if pos.x < -_side_margin or pos.x > _view.x + _side_margin or pos.y > _view.y + _bottom_margin:
+		if (pos.x < -side_kill_margin
+				or pos.x > _view.x + side_kill_margin
+				or pos.y > _view.y + bottom_kill_margin):
 			_ring_out(i)
 
 	_update_hud()
@@ -153,6 +168,10 @@ func _check_game_over() -> void:
 	if alive.size() <= 1:
 		_game_over = true
 		_music.stop()   # match's over — cut the music until someone restarts
+		get_tree().call_group("projectiles", "queue_free")
+		for player in _players:
+			if player.has_method("set_match_active"):
+				player.set_match_active(false)
 		if alive.size() == 1:
 			_message.text = "%s WINS!\nPress Enter to restart" % _players[alive[0]].hero.hero_name
 		else:

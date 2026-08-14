@@ -15,6 +15,11 @@ set "REPO=avtandili-babilodze/Skadoosh"
 set "BRANCH=main"
 set "VERFILE=%~dp0.skadoosh_version"
 if defined SKADOOSH_NOUPDATE goto afterupdate
+REM Never overwrite a developer checkout or its uncommitted work.
+if exist "%~dp0.git\" (
+    echo Developer checkout detected - automatic source updates are disabled.
+    goto afterupdate
+)
 
 echo Checking for updates...
 set "REMOTE="

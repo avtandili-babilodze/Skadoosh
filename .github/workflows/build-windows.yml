@@ -50,7 +50,10 @@ jobs:
           mv templates/* "$HOME/.local/share/godot/export_templates/${TEMPLATES_VERSION}/"
 
       - name: Import assets
-        run: godot --headless --path . --import || true
+        run: godot --headless --path . --import
+
+      - name: Run headless tests
+        run: godot --headless --path . tests/test_runner.tscn
 
       - name: Export Windows .exe
         run: |

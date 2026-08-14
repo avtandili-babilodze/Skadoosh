@@ -12,6 +12,8 @@ extends Node
 const HERO_PATHS := [
 	"res://data/heroes/kunoichi/hero.tres",
 	"res://data/heroes/linea/hero.tres",
+	"res://data/heroes/primorial_demon/hero.tres",
+	"res://data/heroes/water_bender/hero.tres",
 ]
 
 ## Loaded HeroData resources (parallel to HERO_PATHS), filled at startup.
