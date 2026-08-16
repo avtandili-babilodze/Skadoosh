@@ -2,13 +2,13 @@
 
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_attack"]
-[ext_resource type="Texture2D" path="res://data/heroes/water_bender/idle.png" id="3_idle"]
-[ext_resource type="Texture2D" path="res://data/heroes/water_bender/icon.png" id="4_icon"]
-[ext_resource type="Texture2D" path="res://data/heroes/water_bender/walk_sheet_v2.png" id="5_walk"]
-[ext_resource type="Texture2D" path="res://data/heroes/water_bender/jump_sheet_v2.png" id="6_jump"]
-[ext_resource type="Texture2D" path="res://data/heroes/water_bender/fall_sheet_v2.png" id="7_fall"]
-[ext_resource type="Texture2D" path="res://data/heroes/water_bender/light_attack_sheet_v2.png" id="8_light"]
-[ext_resource type="Texture2D" path="res://data/heroes/water_bender/heavy_attack_sheet_v2.png" id="9_heavy"]
+[ext_resource type="Texture2D" path="res://data/heroes/water_bender/idle_v2.png" id="3_idle"]
+[ext_resource type="Texture2D" path="res://data/heroes/water_bender/icon_v2.png" id="4_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/water_bender/walk_sheet_v4.png" id="5_walk"]
+[ext_resource type="Texture2D" path="res://data/heroes/water_bender/jump_sheet_v3.png" id="6_jump"]
+[ext_resource type="Texture2D" path="res://data/heroes/water_bender/fall_sheet_v4.png" id="7_fall"]
+[ext_resource type="Texture2D" path="res://data/heroes/water_bender/light_attack_sheet_v3.png" id="8_light"]
+[ext_resource type="Texture2D" path="res://data/heroes/water_bender/heavy_attack_sheet_v3.png" id="9_heavy"]
 [ext_resource type="Texture2D" path="res://data/heroes/water_bender/water_spit_v2.png" id="10_spit"]
 [ext_resource type="Texture2D" path="res://data/heroes/water_bender/wave_v2.png" id="11_wave"]
 
@@ -105,10 +105,10 @@ fall_fps = 12.0
 air_faces_right = true
 air_sprite_height = 146.0
 walk_texture = ExtResource("5_walk")
-walk_hframes = 3
+walk_hframes = 4
 walk_vframes = 2
-walk_frames = 6
-walk_fps = 10.0
+walk_frames = 8
+walk_fps = 14.0
 walk_sprite_height = 148.0
 walk_faces_right = true
 icon = ExtResource("4_icon")

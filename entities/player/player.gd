@@ -423,17 +423,9 @@ func _update_pose(direction: float, delta: float) -> void:
 
 func _show_attack_animation(skill: AttackData) -> void:
 	_pose = "attack"
-	_sprite.texture = skill.animation_texture
-	_sprite.hframes = maxi(1, skill.animation_hframes)
-	_sprite.vframes = maxi(1, skill.animation_vframes)
-	_sprite.frame = 0
-	var frame_height := skill.animation_texture.get_height() / float(_sprite.vframes)
-	if frame_height > 0.0:
-		var scale_factor := skill.animation_sprite_height / frame_height
-		_sprite.scale = Vector2(scale_factor, scale_factor)
-	_art_faces_right = skill.animation_faces_right
-	_sprite.visible = true
-	_visual.visible = false
+	_configure_sprite(skill.animation_texture, skill.animation_hframes,
+			skill.animation_vframes, skill.animation_sprite_height,
+			skill.animation_faces_right)
 
 
 func _update_attack_animation() -> void:
@@ -464,16 +456,8 @@ func _show_walk(delta: float) -> void:
 	if _pose != "walk":
 		_pose = "walk"
 		_anim_time = 0.0
-		_sprite.texture = hero.walk_texture
-		_sprite.hframes = maxi(1, hero.walk_hframes)
-		_sprite.vframes = maxi(1, hero.walk_vframes)
-		var frame_h := hero.walk_texture.get_height() / float(_sprite.vframes)
-		if frame_h > 0.0:
-			var scale_factor := hero.walk_sprite_height / frame_h
-			_sprite.scale = Vector2(scale_factor, scale_factor)
-		_art_faces_right = hero.walk_faces_right
-		_sprite.visible = true
-		_visual.visible = false
+		_configure_sprite(hero.walk_texture, hero.walk_hframes, hero.walk_vframes,
+				hero.walk_sprite_height, hero.walk_faces_right)
 	_anim_time += delta
 	var count := hero.walk_frames if hero.walk_frames > 0 else _sprite.hframes * _sprite.vframes
 	if count > 0:
@@ -496,17 +480,8 @@ func _show_air(delta: float) -> void:
 	if _pose != wanted_pose:
 		_pose = wanted_pose
 		_anim_time = 0.0
-		_sprite.texture = texture
-		_sprite.hframes = maxi(1, hframes)
-		_sprite.vframes = maxi(1, vframes)
-		_sprite.frame = 0
-		var frame_height := texture.get_height() / float(_sprite.vframes)
-		if frame_height > 0.0:
-			var scale_factor := hero.air_sprite_height / frame_height
-			_sprite.scale = Vector2(scale_factor, scale_factor)
-		_art_faces_right = hero.air_faces_right
-		_sprite.visible = true
-		_visual.visible = false
+		_configure_sprite(texture, hframes, vframes, hero.air_sprite_height,
+				hero.air_faces_right)
 	_anim_time += delta
 	var grid_frames := maxi(1, _sprite.hframes * _sprite.vframes)
 	var frame_count := mini(grid_frames,
@@ -517,15 +492,28 @@ func _show_air(delta: float) -> void:
 
 
 func _show_texture(texture: Texture2D, faces_right: bool, height: float = -1.0) -> void:
+	var target_height := height if height > 0.0 else hero.sprite_height
+	_configure_sprite(texture, 1, 1, target_height, faces_right)
+
+
+func _configure_sprite(texture: Texture2D, hframes: int, vframes: int,
+		target_height: float, faces_right: bool) -> void:
+	if texture == null:
+		_sprite.visible = false
+		return
+	var columns := maxi(1, hframes)
+	var rows := maxi(1, vframes)
+	var frame_height := texture.get_height() / float(rows)
+	if frame_height <= 0.0:
+		_sprite.visible = false
+		return
+	var scale_factor := target_height / frame_height
+	_sprite.visible = false
 	_sprite.texture = texture
-	_sprite.hframes = 1
-	_sprite.vframes = 1
+	_sprite.hframes = columns
+	_sprite.vframes = rows
 	_sprite.frame = 0
-	var texture_height := texture.get_height()
-	if texture_height > 0:
-		var target_height := height if height > 0.0 else hero.sprite_height
-		var scale_factor := target_height / texture_height
-		_sprite.scale = Vector2(scale_factor, scale_factor)
+	_sprite.scale = Vector2(scale_factor, scale_factor)
 	_art_faces_right = faces_right
-	_sprite.visible = true
 	_visual.visible = false
+	_sprite.visible = true

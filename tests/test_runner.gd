@@ -24,6 +24,7 @@ func _check(condition: bool, message: String) -> void:
 
 func _run() -> void:
 	_test_hero_data()
+	await _test_sprite_scale_stability()
 	await _test_attack_transaction()
 	await _test_ground_spike_attack()
 	await _test_water_bender_projectiles()
@@ -60,6 +61,7 @@ func _test_hero_data() -> void:
 		if hero.hero_name == "Primordial Demon":
 			_validate_primordial_demon_sheets(hero)
 		elif hero.hero_name == "Waterbender":
+			_check(hero.walk_frames >= 8, "Waterbender walk cycle has smooth in-between poses")
 			_validate_water_bender(hero)
 
 
@@ -190,6 +192,7 @@ func _validate_primordial_demon_sheets(hero: HeroData) -> void:
 
 func _validate_water_bender(hero: HeroData) -> void:
 	var character_sheets := [
+		["idle", hero.texture, 1, 1],
 		["walk", hero.walk_texture, hero.walk_hframes, hero.walk_vframes],
 		["jump", hero.jump_texture, hero.jump_hframes, hero.jump_vframes],
 		["fall", hero.fall_texture, hero.fall_hframes, hero.fall_vframes],
@@ -201,6 +204,10 @@ func _validate_water_bender(hero: HeroData) -> void:
 	for sheet in character_sheets:
 		_check(_has_clear_vertical_frame_gutters(sheet[1], sheet[2], sheet[3]),
 				"Waterbender %s frames have isolated atlas cells" % sheet[0])
+		_check(_has_opaque_pale_skin(sheet[1]),
+				"Waterbender %s art uses opaque pale skin" % sheet[0])
+	_check(_all_visible_pixels_are_opaque(hero.texture),
+			"Waterbender idle art is fully opaque")
 	_check(_frames_share_visible_baseline(hero.walk_texture,
 			hero.walk_hframes, hero.walk_vframes),
 			"Waterbender walk frames share a stable ground line")
@@ -243,6 +250,33 @@ func _has_clear_vertical_frame_gutters(texture: Texture2D, hframes: int,
 					if (image.get_pixel(left + inset, y).a >= 0.01
 							or image.get_pixel(right - inset, y).a >= 0.01):
 						return false
+	return true
+
+
+func _has_opaque_pale_skin(texture: Texture2D) -> bool:
+	if texture == null:
+		return false
+	var image := texture.get_image()
+	var pale_pixels := 0
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var color := image.get_pixel(x, y)
+			if (color.r >= 0.70 and color.g >= 0.60 and color.b >= 0.60
+					and color.r >= color.g and absf(color.g - color.b) <= 0.09
+					and color.a >= 0.99):
+				pale_pixels += 1
+	return pale_pixels > 32
+
+
+func _all_visible_pixels_are_opaque(texture: Texture2D) -> bool:
+	if texture == null:
+		return false
+	var image := texture.get_image()
+	for y in range(image.get_height()):
+		for x in range(image.get_width()):
+			var alpha := image.get_pixel(x, y).a
+			if alpha >= 0.01 and alpha < 0.99:
+				return false
 	return true
 
 
@@ -291,6 +325,34 @@ func _visible_baseline_offset(texture: Texture2D, hframes: int,
 			if image.get_pixel(x, y).a >= 0.01:
 				return (y - frame_height * 0.5) * sprite_height / frame_height
 	return INF
+
+
+func _test_sprite_scale_stability() -> void:
+	for hero: HeroData in Roster.heroes:
+		if hero.walk_texture == null:
+			continue
+		var fighter = PLAYER_SCENE.instantiate()
+		fighter.hero = hero
+		add_child(fighter)
+		await get_tree().process_frame
+		var sprite: Sprite2D = fighter.get_node("Sprite2D")
+		fighter._show_walk(0.0)
+		var walk_height := sprite.texture.get_height() / float(sprite.vframes) * absf(sprite.scale.y)
+		_check(absf(walk_height - hero.walk_sprite_height) < 0.01,
+				"%s keeps its configured size when movement starts" % hero.hero_name)
+		fighter._show_idle()
+		var idle_height := sprite.texture.get_height() * absf(sprite.scale.y)
+		_check(absf(idle_height - hero.sprite_height) < 0.01,
+				"%s keeps its configured size when movement stops" % hero.hero_name)
+		for skill: AttackData in [hero.light_attack, hero.heavy_attack]:
+			fighter._show_attack_animation(skill)
+			var attack_height := (sprite.texture.get_height() / float(sprite.vframes)
+					* absf(sprite.scale.y))
+			_check(absf(attack_height - skill.animation_sprite_height) < 0.01,
+					"%s/%s keeps its configured attack size" % [
+						hero.hero_name, skill.skill_name])
+		fighter.queue_free()
+		await get_tree().process_frame
 
 
 func _test_attack_transaction() -> void:
