@@ -1,0 +1,102 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
+[ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/idle_sheet.png" id="3_idle"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/run_sheet.png" id="4_run"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/jump_sheet.png" id="5_jump"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/fall.png" id="6_fall"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/light_attack_sheet.png" id="7_light"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/heavy_attack_sheet.png" id="8_heavy"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/hurt_sheet.png" id="9_hurt"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/death_sheet.png" id="10_death"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/antiope_icon.png" id="11_icon"]
+
+[sub_resource type="Resource" id="light"]
+script = ExtResource("2_atk")
+skill_name = "Shield Bash"
+kind = 0
+damage = 6.0
+knockback = 380.0
+knockback_up_ratio = 0.12
+startup_time = 0.07
+active_time = 0.08
+recovery_time = 0.14
+post_end_lag = 0.3
+cooldown = 0.4
+animation_texture = ExtResource("7_light")
+animation_hframes = 4
+animation_frames = 4
+animation_release_frame = 1
+animation_sprite_height = 140.2
+animation_faces_right = true
+reach = 63.0
+height = 90.0
+
+[sub_resource type="Resource" id="heavy"]
+script = ExtResource("2_atk")
+skill_name = "Amazon Cleave"
+kind = 0
+damage = 15.0
+knockback = 600.0
+knockback_up_ratio = 0.2
+startup_time = 0.18
+active_time = 0.1
+recovery_time = 0.22
+post_end_lag = 0.5
+cooldown = 0.8
+animation_texture = ExtResource("8_heavy")
+animation_hframes = 3
+animation_vframes = 2
+animation_frames = 6
+animation_release_frame = 3
+animation_sprite_height = 140.2
+animation_faces_right = true
+reach = 77.0
+height = 100.0
+
+[resource]
+script = ExtResource("1_hero")
+hero_name = "Antiope"
+description = "An Amazon warrior who bashes with her shield and cleaves with her sword."
+speed = 255.0
+ground_acceleration = 3200.0
+air_acceleration = 850.0
+defense = 6.0
+knockback_percent_scale = 1.0
+light_attack = SubResource("light")
+heavy_attack = SubResource("heavy")
+jump_texture = ExtResource("5_jump")
+fall_texture = ExtResource("6_fall")
+jump_hframes = 4
+jump_frames = 4
+jump_fps = 12.0
+air_faces_right = true
+air_sprite_height = 140.2
+walk_texture = ExtResource("4_run")
+walk_hframes = 4
+walk_vframes = 2
+walk_frames = 8
+walk_fps = 18.0
+walk_sprite_height = 140.2
+walk_faces_right = true
+icon = ExtResource("11_icon")
+texture = ExtResource("3_idle")
+faces_right = true
+color = Color(0.75, 0.45, 0.25, 1)
+sprite_height = 140.2
+idle_hframes = 6
+idle_frames = 6
+idle_fps = 4.0
+hurt_texture = ExtResource("9_hurt")
+hurt_hframes = 4
+hurt_frames = 4
+hurt_fps = 18.0
+hurt_sprite_height = 140.2
+hurt_faces_right = true
+death_texture = ExtResource("10_death")
+death_hframes = 4
+death_frames = 4
+death_fps = 8.0
+death_sprite_height = 140.2
+death_faces_right = true

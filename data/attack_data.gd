@@ -36,8 +36,14 @@ enum Kind { MELEE, RANGED, GROUND_SPIKE }
 @export var animation_texture: Texture2D
 @export var animation_hframes: int = 1
 @export var animation_vframes: int = 1
-## Frames to play (0 = hframes × vframes). Frames are spread across all attack phases.
+## Frames to play (0 = hframes × vframes). Frames spread evenly across all attack
+## phases unless animation_release_frame pins the key pose to the hit.
 @export var animation_frames: int = 0
+## Frame (0-based) showing the moment of release, pinned to the active window:
+## earlier frames play during startup and later ones during recovery. Use it when
+## the art's key pose (a whip cracking, a fireball leaving the hand) must line up
+## with the hit. -1 spreads every frame evenly across the whole attack instead.
+@export var animation_release_frame: int = -1
 ## Height used to scale one complete sheet cell on screen.
 @export var animation_sprite_height: float = 110.0
 ## Set FALSE if the animation artwork is drawn facing left.

@@ -29,6 +29,9 @@ func _run() -> void:
 	await _test_ground_spike_attack()
 	await _test_water_bender_projectiles()
 	await _test_procedural_motion()
+	await _test_idle_animation()
+	await _test_hurt_animation()
+	_test_attack_release_frame()
 	_test_walk_sheet_alignment()
 	await _test_scene_startup()
 	if _failures == 0:
@@ -39,7 +42,7 @@ func _run() -> void:
 
 
 func _test_hero_data() -> void:
-	_check(Roster.heroes.size() >= 4, "the roster loads all four fighters")
+	_check(Roster.heroes.size() >= 7, "the roster loads all seven fighters")
 	var names: Dictionary = {}
 	for hero: HeroData in Roster.heroes:
 		_check(not hero.hero_name.is_empty(), "each fighter has a name")
@@ -49,6 +52,7 @@ func _test_hero_data() -> void:
 		_check(hero.air_acceleration > 0.0, "%s has air acceleration" % hero.hero_name)
 		_validate_walk_animation(hero)
 		_validate_air_animation(hero)
+		_validate_death_sheet(hero)
 		_validate_skill(hero, hero.light_attack)
 		_validate_skill(hero, hero.heavy_attack)
 		_check(is_equal_approx(hero.light_attack.post_end_lag, 0.3),
@@ -65,6 +69,22 @@ func _test_hero_data() -> void:
 		elif hero.hero_name == "Waterbender":
 			_check(hero.walk_frames >= 8, "Waterbender walk cycle has smooth in-between poses")
 			_validate_water_bender(hero)
+		elif hero.hero_name == "Lilith":
+			_validate_rebuilt_hero(hero)
+			_check(hero.light_attack.kind == AttackData.Kind.MELEE
+					and hero.heavy_attack.kind == AttackData.Kind.MELEE,
+					"Lilith fights with a melee whip")
+		elif hero.hero_name == "Antiope":
+			_validate_rebuilt_hero(hero)
+			_check(hero.light_attack.kind == AttackData.Kind.MELEE
+					and hero.heavy_attack.kind == AttackData.Kind.MELEE,
+					"Antiope fights up close with shield and sword")
+		elif hero.hero_name == "Kitsune":
+			_validate_rebuilt_hero(hero)
+			_check(hero.light_attack.kind == AttackData.Kind.RANGED,
+					"Kitsune's light attack throws foxfire")
+			_check(hero.light_attack.projectile_texture != hero.light_attack.animation_texture,
+					"Kitsune's foxfire is its own projectile, not baked into her pose")
 
 
 func _validate_walk_animation(hero: HeroData) -> void:
@@ -169,6 +189,7 @@ func _validate_primordial_demon_sheets(hero: HeroData) -> void:
 	_check(_frames_share_visible_baseline(hero.walk_texture,
 			hero.walk_hframes, hero.walk_vframes),
 			"Primordial Demon walk frames share a stable ground line")
+	_check_walk_pace(hero)
 	_check(_frames_share_visible_baseline(hero.heavy_attack.animation_texture,
 			hero.heavy_attack.animation_hframes, hero.heavy_attack.animation_vframes),
 			"Primordial Demon heavy-cast frames finish on the ground")
@@ -190,6 +211,120 @@ func _validate_primordial_demon_sheets(hero: HeroData) -> void:
 			"Primordial Demon light attack meets her idle ground line")
 	_check(absf(heavy_baseline - idle_baseline) <= 4.0,
 			"Primordial Demon heavy cast meets her idle ground line")
+
+
+## Heroes rebuilt from asset-pack sheets (Lilith, Kitsune) are cut apart and
+## re-laid on one shared cell height, so every grounded pose must stand on the same
+## ground line and read at one size, and the legs must keep pace with the body.
+func _validate_rebuilt_hero(hero: HeroData) -> void:
+	var who := hero.hero_name
+	_check(hero.idle_hframes * hero.idle_vframes > 1 and hero.idle_frames >= 4,
+			"%s has an animated idle" % who)
+	_check(hero.texture.get_width() % hero.idle_hframes == 0
+			and hero.texture.get_height() % hero.idle_vframes == 0,
+			"%s idle sheet divides into equal cells" % who)
+	_check(_has_transparent_corners(hero.texture), "%s idle sheet has transparent corners" % who)
+	_check(_frames_share_visible_baseline(hero.texture, hero.idle_hframes, hero.idle_vframes),
+			"%s idle frames share one ground line" % who)
+	var idle_baseline := _visible_baseline_offset(hero.texture,
+			hero.idle_hframes, hero.idle_vframes, hero.sprite_height)
+	_check(hero.hurt_texture != null, "%s has a hurt animation" % who)
+	var poses := [
+		["walk", hero.walk_texture, hero.walk_hframes, hero.walk_vframes, hero.walk_sprite_height],
+		["light attack", hero.light_attack.animation_texture, hero.light_attack.animation_hframes,
+				hero.light_attack.animation_vframes, hero.light_attack.animation_sprite_height],
+		["heavy attack", hero.heavy_attack.animation_texture, hero.heavy_attack.animation_hframes,
+				hero.heavy_attack.animation_vframes, hero.heavy_attack.animation_sprite_height],
+		["hurt", hero.hurt_texture, hero.hurt_hframes, hero.hurt_vframes, hero.hurt_sprite_height],
+	]
+	for pose in poses:
+		_check(pose[1].get_width() % pose[2] == 0 and pose[1].get_height() % pose[3] == 0,
+				"%s %s sheet divides into equal cells" % [who, pose[0]])
+		var baseline := _visible_baseline_offset(pose[1], pose[2], pose[3], pose[4])
+		_check(absf(baseline - idle_baseline) <= 4.0,
+				"%s %s meets the idle ground line" % [who, pose[0]])
+		_check(_frames_share_visible_baseline(pose[1], pose[2], pose[3]),
+				"%s %s frames share one ground line" % [who, pose[0]])
+	_check(hero.light_attack.animation_release_frame >= 0
+			and hero.heavy_attack.animation_release_frame >= 0,
+			"%s attack art is pinned to the moment it hits" % who)
+	_check_walk_pace(hero)
+
+
+## A planted foot should stay put: the body may travel a little further than the
+## legs step each cycle, but not far enough to read as gliding.
+func _check_walk_pace(hero: HeroData) -> void:
+	var step := _walk_step_length(hero)
+	var travel := hero.speed * float(hero.walk_frames) / hero.walk_fps
+	_check(step > 0.0 and travel <= 2.0 * step * 1.3,
+			"%s legs keep pace with the body (travel %.0f px per cycle, stride %.0f px)"
+			% [hero.hero_name, travel, 2.0 * step])
+	# ...and not by pumping the legs: past about five steps a second a walk or run
+	# stops reading as natural and looks like frantic sprinting.
+	var steps_per_second := 2.0 * hero.walk_fps / float(hero.walk_frames)
+	_check(steps_per_second <= 5.0,
+			"%s legs move at a natural pace (%.1f steps/s)" % [hero.hero_name, steps_per_second])
+
+
+## On-screen step length drawn in a walk sheet, measured heel to heel. Only the
+## soles (the lowest rows of each frame) are read, so a long dress that reaches the
+## floor cannot hide the feet; feet are told apart by the gap between them, and
+## sheets face right, so each foot's heel is its left edge.
+func _walk_step_length(hero: HeroData) -> float:
+	var image := hero.walk_texture.get_image()
+	var cell_w: int = image.get_width() / hero.walk_hframes
+	var cell_h: int = image.get_height() / hero.walk_vframes
+	var count: int = hero.walk_frames if hero.walk_frames > 0 else hero.walk_hframes * hero.walk_vframes
+	var widest := 0
+	for k in count:
+		var ox: int = (k % hero.walk_hframes) * cell_w
+		var oy: int = (k / hero.walk_hframes) * cell_h
+		var top := -1
+		var bottom := -1
+		for y in cell_h:
+			for x in cell_w:
+				if image.get_pixel(ox + x, oy + y).a > 0.0:
+					if top < 0:
+						top = y
+					bottom = y
+					break
+		if top < 0:
+			continue
+		var rows := maxi(3, int((bottom - top) * 0.06))
+		var first_heel := -1
+		var last_heel := -1
+		var previous := -100
+		for x in cell_w:
+			var sole := false
+			for y in range(bottom - rows + 1, bottom + 1):
+				if image.get_pixel(ox + x, oy + y).a > 0.0:
+					sole = true
+					break
+			if sole:
+				if x - previous > 3:
+					if first_heel < 0:
+						first_heel = x
+					last_heel = x
+				previous = x
+		if first_heel >= 0 and last_heel > first_heel:
+			widest = maxi(widest, last_heel - first_heel)
+	return float(widest) * hero.walk_sprite_height / cell_h
+
+
+## Death sheets are kept for later even though the game does not play them yet;
+## make sure they stay usable in the meantime.
+func _validate_death_sheet(hero: HeroData) -> void:
+	if hero.death_texture == null:
+		return
+	var who := hero.hero_name
+	_check(hero.death_hframes > 0 and hero.death_vframes > 0
+			and hero.death_texture.get_width() % hero.death_hframes == 0
+			and hero.death_texture.get_height() % hero.death_vframes == 0,
+			"%s death sheet divides into equal cells" % who)
+	_check(_has_transparent_corners(hero.death_texture), "%s death sheet has transparent corners" % who)
+	var cells := hero.death_hframes * hero.death_vframes
+	var frames: int = hero.death_frames if hero.death_frames > 0 else cells
+	_check(frames >= 2 and frames <= cells, "%s death animation has a valid frame count" % who)
 
 
 func _validate_water_bender(hero: HeroData) -> void:
@@ -344,7 +479,7 @@ func _test_sprite_scale_stability() -> void:
 		_check(absf(walk_height - hero.walk_sprite_height) < 0.01,
 				"%s keeps its configured size when movement starts" % hero.hero_name)
 		fighter._show_idle()
-		var idle_height := sprite.texture.get_height() * absf(sprite.scale.y)
+		var idle_height := sprite.texture.get_height() / float(sprite.vframes) * absf(sprite.scale.y)
 		_check(absf(idle_height - hero.sprite_height) < 0.01,
 				"%s keeps its configured size when movement stops" % hero.hero_name)
 		for skill: AttackData in [hero.light_attack, hero.heavy_attack]:
@@ -584,6 +719,10 @@ func _test_procedural_motion() -> void:
 			"squash widens the silhouette so volume is preserved")
 	_check(sprite.position.y > 0.0,
 			"squash is anchored to the feet rather than lifting them")
+	var feet_y: float = (sprite.position.y
+			+ fighter._ground_offset * sprite.scale.y / fighter._base_scale)
+	_check(absf(feet_y - fighter._ground_offset) < 0.01,
+			"squash keeps the feet exactly on the ground line")
 
 	# The spring returns to neutral, leaving the pose exactly as authored.
 	fighter._apply_procedural_motion(2.0)
@@ -650,3 +789,88 @@ func _test_walk_sheet_alignment() -> void:
 		_check(spread <= int(cell_h * 0.03) + 2,
 				"%s walk frames share a feet baseline (spread %d px)" % [
 					hero.hero_name, spread])
+
+
+## An idle sheet loops on the render clock like the walk cycle does.
+func _test_idle_animation() -> void:
+	for hero: HeroData in Roster.heroes:
+		var count: int = hero.idle_frames if hero.idle_frames > 0 else hero.idle_hframes * hero.idle_vframes
+		if count <= 1 or hero.texture == null:
+			continue
+		var fighter = PLAYER_SCENE.instantiate()
+		fighter.hero = hero
+		add_child(fighter)
+		await get_tree().process_frame
+		var sprite: Sprite2D = fighter.get_node("Sprite2D")
+		fighter._pose = ""
+		fighter._show_idle()
+		_check(sprite.hframes == hero.idle_hframes and sprite.vframes == hero.idle_vframes,
+				"%s idle uses its sheet grid" % hero.hero_name)
+		fighter._idle_time = 0.0
+		fighter._advance_animation(0.0)
+		var first: int = sprite.frame
+		fighter._advance_animation(1.01 / hero.idle_fps)
+		_check(sprite.frame != first, "%s idle animation advances" % hero.hero_name)
+		fighter._advance_animation(float(count) / hero.idle_fps)
+		_check(sprite.frame < count, "%s idle animation loops within its frames" % hero.hero_name)
+		fighter.queue_free()
+		await get_tree().process_frame
+
+
+## A release frame pins the art's key pose to the active window: wind-up frames
+## fill startup, the release frame covers the hit, the rest fill recovery.
+func _test_attack_release_frame() -> void:
+	var fighter = PLAYER_SCENE.instantiate()
+	var skill := AttackData.new()
+	skill.startup_time = 0.16
+	skill.active_time = 0.06
+	skill.recovery_time = 0.28
+	var frames := 8
+	skill.animation_release_frame = 5
+	_check(fighter._attack_frame_at(skill, 0.0, frames) == 0,
+			"release-frame attacks start on the first wind-up frame")
+	_check(fighter._attack_frame_at(skill, 0.159, frames) < 5,
+			"release frame stays hidden during startup")
+	_check(fighter._attack_frame_at(skill, 0.161, frames) == 5,
+			"release frame shows the moment the active window opens")
+	_check(fighter._attack_frame_at(skill, 0.219, frames) == 5,
+			"release frame holds for the whole active window")
+	_check(fighter._attack_frame_at(skill, 0.499, frames) == frames - 1,
+			"recovery finishes on the last frame")
+	var previous := -1
+	var ordered := true
+	for step in 51:
+		var frame: int = fighter._attack_frame_at(skill, step * 0.01, frames)
+		if frame < previous:
+			ordered = false
+		previous = frame
+	_check(ordered, "release-frame playback never runs backwards")
+	skill.animation_release_frame = -1
+	_check(fighter._attack_frame_at(skill, 0.25, frames) == 4,
+			"without a release frame, frames still spread evenly")
+	fighter.free()
+
+
+## A hero with hurt art shows it while stunned, plays it once, then lets go.
+func _test_hurt_animation() -> void:
+	for hero: HeroData in Roster.heroes:
+		if hero.hurt_texture == null:
+			continue
+		var fighter = PLAYER_SCENE.instantiate()
+		fighter.hero = hero
+		add_child(fighter)
+		await get_tree().process_frame
+		var sprite: Sprite2D = fighter.get_node("Sprite2D")
+		_check(fighter.take_hit(5.0, 100.0, 1.0, 0.1), "%s accepts a test hit" % hero.hero_name)
+		fighter._select_pose()
+		_check(fighter._pose == "hurt" and sprite.texture == hero.hurt_texture,
+				"%s shows the hurt pose while stunned" % hero.hero_name)
+		fighter._advance_animation(10.0)
+		var count: int = hero.hurt_frames if hero.hurt_frames > 0 else hero.hurt_hframes * hero.hurt_vframes
+		_check(sprite.frame == count - 1, "%s hurt animation plays once and holds" % hero.hero_name)
+		fighter._state = fighter.FighterState.FREE
+		fighter._select_pose()
+		_check(fighter._pose != "hurt", "%s leaves the hurt pose when the stun ends" % hero.hero_name)
+		fighter.queue_free()
+		await get_tree().process_frame
+

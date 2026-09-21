@@ -71,8 +71,10 @@ adds its card to this grid; the menu does not require per-character layout chang
 Each hero is data-driven (`data/heroes/<name>/hero.tres`) with its own movement,
 defense, animation, and two skills. Attacks have independently tunable startup,
 active, recovery, post-skill lock, damage, knockback, cooldown, and hitbox/projectile
-values. Light attacks lock control for 0.3 seconds after finishing; heavy attacks
-lock control for 0.5 seconds.
+values, plus an optional release frame that pins the art's key pose (a sword landing,
+a fireball leaving the hand) to the exact moment the hit happens. Light attacks lock
+control for 0.3 seconds after finishing; heavy attacks lock control for 0.5 seconds.
+Idle poses can be animated, and fighters with hurt art flinch while stunned.
 
 - **Kunoichi** — a fast, tanky bruiser with a four-pose walk cycle and distinct
   light/heavy sword animations.
@@ -82,6 +84,12 @@ lock control for 0.5 seconds.
   delayed spike eruption about four game meters in front of her.
 - **Waterbender** — a flowing ranged fighter with a three-meter water spit and a
   four-meter wave that grows in size and scales from 1× to 2× damage as it travels.
+- **Lilith** — a winged succubus with a whip: a quick **Whip Lash** (light) and a
+  wide overhead **Infernal Whip** (heavy). Slightly floaty in the air.
+- **Kitsune** — a nine-tailed fox who throws a **Foxfire Orb** (light) and slams her
+  tails down for a close-range **Foxfire Eruption** (heavy).
+- **Antiope** — an Amazon warrior: a quick **Shield Bash** (light) and a sweeping
+  **Amazon Cleave** (heavy). Tanky, with a shield-bearer's defense.
 
 > Want to tweak balance or add a hero? Edit the numbers in
 > `data/heroes/<name>/hero.tres` — no player-code changes are needed. Add a new
@@ -92,16 +100,30 @@ lock control for 0.5 seconds.
 Create a folder such as `data/heroes/my_hero/` and put the character PNG files
 there. A complete fighter can provide:
 
-- `idle.png` and `icon.png`
-- a walk sprite sheet
-- jump and fall/dive poses or sprite sheets
-- separate light- and heavy-attack sprite sheets
+- an `icon.png` for the select screen and HUD
+- an idle image, or an animated idle sheet (`idle_hframes`, `idle_frames`, `idle_fps`)
+- a movement sheet — prefer a **run** cycle over a walk: fighters move at running
+  speed, and a walk's short steps make the feet slide
+- jump and fall poses or sheets (a jump sheet needs at least four frames)
+- separate light- and heavy-attack sheets, each with an optional
+  `animation_release_frame` so the hit lands on the frame that draws it
+- optional hurt sheet, played while stunned (`hurt_*`)
+- optional death sheet (`death_*`) — kept with the hero, not played yet
 - optional projectile or ground-spike effect art for special attacks
 
-Sprite sheets should have a transparent background, equal-sized cells, consistent
-character scale/baseline, and no artwork crossing between cells. Copy an existing
-`hero.tres`, replace its texture paths and animation grid values, then add that
-resource to `HERO_PATHS` in `autoload/roster.gd`.
+Rules every sheet must follow (the test suite checks them):
+
+- transparent background, equal-sized cells, no artwork crossing between cells
+- one character scale, and the feet on the same row in every cell of every sheet,
+  so the fighter never grows, shrinks, floats or sinks between animations
+- legs that keep pace with the body: set `walk_fps` near
+  `speed × walk_frames ÷ stride` (the on-screen distance one full cycle's steps
+  cover) and keep it under five steps a second; faster legs look like sprinting,
+  slower ones make the feet slide
+
+Copy an existing `hero.tres` (Lilith, Kitsune and Antiope use every feature),
+replace its texture paths and grid values, then add that resource to `HERO_PATHS`
+in `autoload/roster.gd`.
 
 ## Tests
 
@@ -111,6 +133,8 @@ With Godot 4.3 available, run the dependency-free headless suite with:
 godot --headless --path . tests/test_runner.tscn
 ```
 
+Besides gameplay, it checks every fighter's sheets: equal grids, transparent corners,
+one shared ground line, and legs that keep pace with movement at a natural speed.
 The release workflow runs the same suite before exporting the Windows build.
 
 ## Requirements

@@ -76,12 +76,18 @@ var _pose: String = ""
 var _anim_time: float = 0.0
 ## Play-once animation clock (jump / fall), reset when an air pose is entered.
 var _air_time: float = 0.0
+## Looping clock for an animated idle sheet.
+var _idle_time: float = 0.0
 ## Last movement input, captured in physics so _process can pick the pose.
 var _move_direction: float = 0.0
+## Play-once clock for the hurt pose, restarted by every accepted hit.
+var _hurt_time: float = 0.0
 ## Scale set by _configure_sprite, before procedural effects are applied.
 var _base_scale: float = 1.0
-## On-screen height of the current pose, used to anchor squash to the feet.
-var _sprite_height_px: float = 1.0
+## Distance from the body's centre down to its feet (half the collision box).
+## Squash pivots on this line and the bob scales with the body, never with the
+## sprite cell, which may carry empty space for long effects like a whip.
+var _ground_offset: float = 50.0
 ## Current vertical squash/stretch; 1.0 is neutral.
 var _squash: float = 1.0
 var _was_on_floor: bool = true
@@ -93,6 +99,9 @@ func _ready() -> void:
 		push_warning("%s has no HeroData assigned — using defaults." % name)
 		hero = HeroData.new()
 	_spawn_position = global_position
+	var box := $CollisionShape2D.shape as RectangleShape2D
+	if box != null:
+		_ground_offset = box.size.y * 0.5
 	_reset_air_actions()
 	_show_idle()
 
@@ -156,15 +165,15 @@ func _apply_procedural_motion(delta: float) -> void:
 	var sx := 1.0 / maxf(0.2, sy)   # keep the silhouette's volume roughly constant
 	_sprite.scale = Vector2(_base_scale * sx, _base_scale * sy)
 
-	# Scaling a centred sprite would lift the feet, so push it back down by half
-	# the height it lost. The character then squashes into the floor, not above it.
-	var anchor := _sprite_height_px * (1.0 - sy) * 0.5
+	# Scaling pivots on the sprite's centre, which would lift the feet off the
+	# floor. Offsetting by the ground line keeps the feet exactly where they stand.
+	var anchor := _ground_offset * (1.0 - sy)
 	var bob := 0.0
 	if _pose == "walk" and hero.walk_fps > 0.0:
 		var count := hero.walk_frames if hero.walk_frames > 0 else _sprite.hframes * _sprite.vframes
 		var phase := fmod(_anim_time * hero.walk_fps / maxf(1.0, float(count)), 1.0)
 		# abs(sin) peaks twice per cycle - once per footfall.
-		bob = -absf(sin(phase * TAU)) * _sprite_height_px * BOB_FRACTION
+		bob = -absf(sin(phase * TAU)) * _ground_offset * 2.0 * BOB_FRACTION
 	_sprite.position.y = anchor + bob
 
 
@@ -437,6 +446,7 @@ func take_hit(damage: float, base_knockback: float, dir: float, up_ratio: float)
 	var force := base_knockback * percent_factor
 	velocity = Vector2(dir * force, -force * up_ratio)
 	_squash = HIT_SQUASH
+	_hurt_time = 0.0
 	return true
 
 
@@ -499,12 +509,23 @@ func _reset_air_actions() -> void:
 func _select_pose() -> void:
 	if _state == FighterState.ATTACKING:
 		return
-	if not is_on_floor() and (hero.jump_texture != null or hero.fall_texture != null):
+	if _state == FighterState.HIT_STUN and hero.hurt_texture != null:
+		_select_hurt_pose()
+	elif not is_on_floor() and (hero.jump_texture != null or hero.fall_texture != null):
 		_select_air_pose()
 	elif is_on_floor() and _move_direction != 0.0 and hero.walk_texture != null:
 		_select_walk_pose()
 	else:
 		_show_idle()
+
+
+func _select_hurt_pose() -> void:
+	if _pose == "hurt":
+		return
+	_pose = "hurt"
+	_hurt_time = 0.0
+	_configure_sprite(hero.hurt_texture, hero.hurt_hframes, hero.hurt_vframes,
+			hero.hurt_sprite_height, hero.hurt_faces_right)
 
 
 func _select_walk_pose() -> void:
@@ -544,7 +565,13 @@ func _select_air_pose() -> void:
 
 ## Advances whichever animation the current pose owns, once per drawn frame.
 func _advance_animation(delta: float) -> void:
-	if _pose == "walk":
+	if _pose == "idle":
+		var grid_frames := maxi(1, _sprite.hframes * _sprite.vframes)
+		var idle_count := mini(grid_frames, hero.idle_frames if hero.idle_frames > 0 else grid_frames)
+		if idle_count > 1 and hero.idle_fps > 0.0:
+			_idle_time += delta
+			_sprite.frame = int(_idle_time * hero.idle_fps) % idle_count
+	elif _pose == "walk":
 		_anim_time += delta
 		var count := hero.walk_frames if hero.walk_frames > 0 else _sprite.hframes * _sprite.vframes
 		if count > 0:
@@ -559,6 +586,11 @@ func _advance_animation(delta: float) -> void:
 				configured_frames if configured_frames > 0 else grid_frames)
 		# Jump and dive sequences play once, then hold their final pose.
 		_sprite.frame = mini(frame_count - 1, int(_air_time * maxf(0.0, fps)))
+	elif _pose == "hurt":
+		_hurt_time += delta
+		var grid_frames := maxi(1, _sprite.hframes * _sprite.vframes)
+		var hurt_count := mini(grid_frames, hero.hurt_frames if hero.hurt_frames > 0 else grid_frames)
+		_sprite.frame = mini(hurt_count - 1, int(_hurt_time * maxf(0.0, hero.hurt_fps)))
 	elif _pose == "attack" and _attack_skill != null:
 		_attack_animation_elapsed += delta
 		_update_attack_animation()
@@ -577,10 +609,31 @@ func _update_attack_animation() -> void:
 	var grid_frames := maxi(1, _sprite.hframes * _sprite.vframes)
 	var frame_count := mini(grid_frames,
 			_attack_skill.animation_frames if _attack_skill.animation_frames > 0 else grid_frames)
-	var total_time := (_attack_skill.startup_time + _attack_skill.active_time
-			+ _attack_skill.recovery_time)
-	var progress := clampf(_attack_animation_elapsed / maxf(total_time, 0.001), 0.0, 0.9999)
-	_sprite.frame = mini(frame_count - 1, int(progress * frame_count))
+	_sprite.frame = _attack_frame_at(_attack_skill, _attack_animation_elapsed, frame_count)
+
+
+## Maps elapsed attack time to an artwork frame. With a release frame set, that
+## frame is pinned to the active window so the art's key pose happens exactly when
+## the hit or projectile does; otherwise frames spread evenly over the attack.
+func _attack_frame_at(skill: AttackData, elapsed: float, frame_count: int) -> int:
+	var release := skill.animation_release_frame
+	if release < 0 or release >= frame_count:
+		var total := skill.startup_time + skill.active_time + skill.recovery_time
+		var progress := clampf(elapsed / maxf(total, 0.001), 0.0, 0.9999)
+		return mini(frame_count - 1, int(progress * frame_count))
+	if elapsed < skill.startup_time:
+		if release == 0:
+			return 0
+		var windup := clampf(elapsed / maxf(skill.startup_time, 0.001), 0.0, 0.9999)
+		return int(windup * release)
+	if elapsed < skill.startup_time + skill.active_time:
+		return release
+	var remaining := frame_count - release - 1
+	if remaining <= 0:
+		return release
+	var recover := clampf((elapsed - skill.startup_time - skill.active_time)
+			/ maxf(skill.recovery_time, 0.001), 0.0, 0.9999)
+	return release + 1 + int(recover * remaining)
 
 
 func _show_idle() -> void:
@@ -588,7 +641,8 @@ func _show_idle() -> void:
 		return
 	_pose = "idle"
 	if hero.texture != null:
-		_show_texture(hero.texture, hero.faces_right)
+		_configure_sprite(hero.texture, hero.idle_hframes, hero.idle_vframes,
+				hero.sprite_height, hero.faces_right)
 	else:
 		_visual.color = hero.color
 		_visual.visible = true
@@ -613,7 +667,6 @@ func _configure_sprite(texture: Texture2D, hframes: int, vframes: int,
 		return
 	var scale_factor := target_height / frame_height
 	_base_scale = scale_factor
-	_sprite_height_px = target_height
 	_sprite.visible = false
 	_sprite.texture = texture
 	_sprite.hframes = columns

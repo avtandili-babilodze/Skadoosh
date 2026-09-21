@@ -1,0 +1,95 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
+[ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
+[ext_resource type="Texture2D" path="res://data/heroes/lilith/idle_sheet.png" id="3_idle"]
+[ext_resource type="Texture2D" path="res://data/heroes/lilith/walk_sheet.png" id="4_walk"]
+[ext_resource type="Texture2D" path="res://data/heroes/lilith/light_attack_sheet.png" id="5_light"]
+[ext_resource type="Texture2D" path="res://data/heroes/lilith/heavy_attack_sheet.png" id="6_heavy"]
+[ext_resource type="Texture2D" path="res://data/heroes/lilith/lilith_icon.png" id="7_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/lilith/hurt_sheet.png" id="8_hurt"]
+[ext_resource type="Texture2D" path="res://data/heroes/lilith/death_sheet.png" id="9_death"]
+
+[sub_resource type="Resource" id="light"]
+script = ExtResource("2_atk")
+skill_name = "Whip Lash"
+kind = 0
+damage = 6.0
+knockback = 330.0
+knockback_up_ratio = 0.16
+startup_time = 0.08
+active_time = 0.08
+recovery_time = 0.14
+post_end_lag = 0.3
+cooldown = 0.45
+animation_texture = ExtResource("5_light")
+animation_hframes = 3
+animation_vframes = 2
+animation_frames = 6
+animation_release_frame = 2
+animation_sprite_height = 211.71
+animation_faces_right = true
+reach = 100.0
+height = 80.0
+
+[sub_resource type="Resource" id="heavy"]
+script = ExtResource("2_atk")
+skill_name = "Infernal Whip"
+kind = 0
+damage = 14.0
+knockback = 580.0
+knockback_up_ratio = 0.24
+startup_time = 0.22
+active_time = 0.1
+recovery_time = 0.22
+post_end_lag = 0.5
+cooldown = 0.9
+animation_texture = ExtResource("6_heavy")
+animation_hframes = 3
+animation_vframes = 3
+animation_frames = 9
+animation_release_frame = 5
+animation_sprite_height = 211.71
+animation_faces_right = true
+reach = 100.0
+height = 100.0
+
+[resource]
+script = ExtResource("1_hero")
+hero_name = "Lilith"
+description = "A winged succubus who keeps rivals at the end of her whip."
+speed = 210.0
+ground_acceleration = 3000.0
+air_acceleration = 820.0
+gravity_scale = 1.25
+defense = 3.0
+knockback_percent_scale = 1.0
+light_attack = SubResource("light")
+heavy_attack = SubResource("heavy")
+walk_texture = ExtResource("4_walk")
+walk_hframes = 4
+walk_vframes = 2
+walk_frames = 8
+walk_fps = 18.0
+walk_sprite_height = 211.71
+walk_faces_right = true
+icon = ExtResource("7_icon")
+texture = ExtResource("3_idle")
+faces_right = true
+color = Color(0.85, 0.35, 0.55, 1)
+sprite_height = 211.71
+idle_hframes = 6
+idle_frames = 6
+idle_fps = 8.0
+hurt_texture = ExtResource("8_hurt")
+hurt_hframes = 3
+hurt_frames = 3
+hurt_fps = 15.0
+hurt_sprite_height = 211.71
+hurt_faces_right = true
+death_texture = ExtResource("9_death")
+death_hframes = 8
+death_frames = 8
+death_fps = 10.0
+death_sprite_height = 211.71
+death_faces_right = true

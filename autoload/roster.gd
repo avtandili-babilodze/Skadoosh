@@ -5,7 +5,7 @@ extends Node
 ## the arena. The arena reads these back to configure Player1 / Player2.
 ##
 ## To add a new fighter to the game, drop its folder in res://data/heroes/ and
-## add its hero.tres path to HEROES below — the select screen builds itself from
+## add its hero.tres path to HERO_PATHS below — the select screen builds itself from
 ## this list, so no UI code needs to change.
 
 ## Every selectable hero, in the order they appear on the select screen.
@@ -14,6 +14,9 @@ const HERO_PATHS := [
 	"res://data/heroes/linea/hero.tres",
 	"res://data/heroes/primorial_demon/hero.tres",
 	"res://data/heroes/water_bender/hero.tres",
+	"res://data/heroes/lilith/hero.tres",
+	"res://data/heroes/kitsune/hero.tres",
+	"res://data/heroes/antiope/hero.tres",
 ]
 
 ## Loaded HeroData resources (parallel to HERO_PATHS), filled at startup.

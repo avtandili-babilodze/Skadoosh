@@ -96,12 +96,50 @@ extends Resource
 @export_group("Appearance")
 ## Icon shown for this hero on the character-select screen. Square art works best.
 @export var icon: Texture2D
-## Avatar image for this hero. If set, it's shown instead of the color box.
-## Drop a PNG/JPG into res://assets/sprites/ and assign it here.
+## Idle pose for this hero: a single image, or a sheet when the Idle Animation grid
+## below is set. If empty, the fallback color box is shown instead.
 @export var texture: Texture2D
 ## Which way the art is drawn. Set FALSE if the character faces left in the image.
 @export var faces_right: bool = true
 ## Fallback body color, used when no texture is assigned.
 @export var color: Color = Color(0.3, 0.6, 1.0)
-## Height in pixels to scale the avatar to (keeps big images from filling the screen).
+## On-screen height of one idle cell, in px. Keep it in step with the other poses'
+## heights so the fighter reads at one size in every animation.
 @export var sprite_height: float = 110.0
+
+@export_group("Idle Animation")
+## Optional idle sheet grid for `texture`. The defaults (1 × 1) keep a single still pose.
+@export var idle_hframes: int = 1
+@export var idle_vframes: int = 1
+## Frames to play (0 = hframes × vframes). Set if the grid has blank cells.
+@export var idle_frames: int = 0
+## Playback speed, in frames per second. Idle loops forever, so keep it slow.
+@export var idle_fps: float = 6.0
+
+@export_group("Hurt Animation")
+## Optional pose sheet shown while stunned by a hit. Plays once, then holds its last frame.
+@export var hurt_texture: Texture2D
+@export var hurt_hframes: int = 1
+@export var hurt_vframes: int = 1
+## Frames to play (0 = hframes × vframes).
+@export var hurt_frames: int = 0
+## Playback speed. Hit stun is short (about 0.2 s), so keep it quick.
+@export var hurt_fps: float = 15.0
+## On-screen height of one sheet cell, in px.
+@export var hurt_sprite_height: float = 110.0
+## Set FALSE if the hurt art is drawn facing left.
+@export var hurt_faces_right: bool = true
+
+@export_group("Death Animation")
+## Optional death sheet. The game does not play it yet (a ring-out removes the
+## fighter); it is kept with the hero so it can be switched on without re-cutting art.
+@export var death_texture: Texture2D
+@export var death_hframes: int = 1
+@export var death_vframes: int = 1
+## Frames to play (0 = hframes × vframes).
+@export var death_frames: int = 0
+@export var death_fps: float = 10.0
+## On-screen height of one sheet cell, in px.
+@export var death_sprite_height: float = 110.0
+## Set FALSE if the death art is drawn facing left.
+@export var death_faces_right: bool = true
