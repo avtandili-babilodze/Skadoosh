@@ -28,6 +28,8 @@ func _run() -> void:
 	await _test_attack_transaction()
 	await _test_ground_spike_attack()
 	await _test_water_bender_projectiles()
+	await _test_procedural_motion()
+	_test_walk_sheet_alignment()
 	await _test_scene_startup()
 	if _failures == 0:
 		print("All Skadoosh tests passed.")
@@ -336,7 +338,8 @@ func _test_sprite_scale_stability() -> void:
 		add_child(fighter)
 		await get_tree().process_frame
 		var sprite: Sprite2D = fighter.get_node("Sprite2D")
-		fighter._show_walk(0.0)
+		fighter._select_walk_pose()
+		fighter._advance_animation(0.0)
 		var walk_height := sprite.texture.get_height() / float(sprite.vframes) * absf(sprite.scale.y)
 		_check(absf(walk_height - hero.walk_sprite_height) < 0.01,
 				"%s keeps its configured size when movement starts" % hero.hero_name)
@@ -365,16 +368,21 @@ func _test_attack_transaction() -> void:
 	add_child(fighter)
 	add_child(target)
 	await get_tree().physics_frame
-	fighter._show_walk(0.2)
+	fighter._select_walk_pose()
+	fighter._advance_animation(0.2)
 	_check(fighter.get_node("Sprite2D").frame > 0, "walk animation advances beyond its first pose")
 	var heavy: AttackData = fighter.hero.heavy_attack
 	var light: AttackData = fighter.hero.light_attack
 	_check(fighter._begin_attack(heavy, true), "a free fighter can begin an attack")
 	_check(not fighter._begin_attack(light, false), "a second same-frame attack is rejected")
 	var damage_before: float = target.damage_taken
+	# Phase timing is physics-driven; the artwork advances on the render clock.
+	# Step both by the same amount so this mirrors a real frame.
 	fighter._tick_attack(heavy.startup_time * 0.5)
+	fighter._advance_animation(heavy.startup_time * 0.5)
 	_check(target.damage_taken == damage_before, "melee does not hit during startup")
 	fighter._tick_attack(heavy.startup_time * 0.5 + 0.001)
+	fighter._advance_animation(heavy.startup_time * 0.5 + 0.001)
 	_check(target.damage_taken > damage_before, "melee hits when the active phase begins")
 	_check(fighter.get_node("Sprite2D").frame > 0, "attack animation advances with phase timing")
 	var damage_after_hit: float = target.damage_taken
@@ -430,15 +438,19 @@ func _test_ground_spike_attack() -> void:
 	fighter.set_physics_process(false)
 	target.set_physics_process(false)
 	fighter.velocity.y = -100.0
-	fighter._show_air(0.2)
+	fighter._select_air_pose()
+	fighter._advance_animation(0.2)
 	_check(fighter.get_node("Sprite2D").frame > 0, "Primordial Demon's jump sheet animates")
-	fighter._show_air(10.0)
+	fighter._select_air_pose()
+	fighter._advance_animation(10.0)
 	_check(fighter.get_node("Sprite2D").frame == demon.jump_frames - 1,
 			"Primordial Demon's jump holds its final pose instead of looping")
 	fighter.velocity.y = 100.0
-	fighter._show_air(0.2)
+	fighter._select_air_pose()
+	fighter._advance_animation(0.2)
 	_check(fighter.get_node("Sprite2D").frame > 0, "Primordial Demon's dive sheet animates")
-	fighter._show_air(10.0)
+	fighter._select_air_pose()
+	fighter._advance_animation(10.0)
 	_check(fighter.get_node("Sprite2D").frame == demon.fall_frames - 1,
 			"Primordial Demon's dive holds its final pose instead of looping")
 	var damage_before: float = target.damage_taken
@@ -546,3 +558,95 @@ func _test_scene_startup() -> void:
 	arena.queue_free()
 	await get_tree().process_frame
 	await get_tree().create_timer(0.05).timeout
+
+
+## Procedural secondary motion: the effects that keep a low-frame-count sprite
+## moving between drawn frames.
+func _test_procedural_motion() -> void:
+	var hero: HeroData = Roster.heroes[0]
+	if hero.walk_texture == null:
+		return
+	var fighter = PLAYER_SCENE.instantiate()
+	fighter.hero = hero
+	add_child(fighter)
+	await get_tree().process_frame
+	var sprite: Sprite2D = fighter.get_node("Sprite2D")
+	fighter._select_walk_pose()
+
+	# Landing flattens the body, and the sprite is pushed down by half the height
+	# it lost, so the feet stay on the floor instead of floating above it.
+	fighter._anim_time = 0.0
+	fighter._squash = fighter.LAND_SQUASH
+	fighter._apply_procedural_motion(0.0)
+	_check(sprite.scale.y < fighter._base_scale,
+			"landing squashes the fighter vertically")
+	_check(sprite.scale.x > fighter._base_scale,
+			"squash widens the silhouette so volume is preserved")
+	_check(sprite.position.y > 0.0,
+			"squash is anchored to the feet rather than lifting them")
+
+	# The spring returns to neutral, leaving the pose exactly as authored.
+	fighter._apply_procedural_motion(2.0)
+	_check(absf(sprite.scale.y - fighter._base_scale) < 0.001,
+			"squash springs back to the authored scale")
+
+	# The walk bob moves the body even on frames where the artwork is unchanged.
+	var count: int = hero.walk_frames if hero.walk_frames > 0 else 4
+	fighter._squash = 1.0
+	fighter._anim_time = 0.0
+	fighter._apply_procedural_motion(0.0)
+	var flat_y: float = sprite.position.y
+	fighter._squash = 1.0
+	fighter._anim_time = 0.25 * float(count) / hero.walk_fps
+	fighter._apply_procedural_motion(0.0)
+	_check(sprite.position.y < flat_y,
+			"the walk bob lifts the body between footfalls")
+
+	# Leaving the ground stretches, meeting it squashes.
+	fighter._was_on_floor = true
+	fighter._squash = 1.0
+	fighter.velocity.y = -100.0
+	fighter._update_ground_transition()
+	_check(fighter._squash > 1.0, "leaving the ground stretches the fighter")
+
+	fighter.queue_free()
+	await get_tree().process_frame
+
+
+## Every frame of a walk sheet must share a feet baseline. When a sheet's rows are
+## assembled at different vertical offsets the character hitches upward partway
+## through the cycle, which reads as broken animation regardless of frame count.
+func _test_walk_sheet_alignment() -> void:
+	for hero: HeroData in Roster.heroes:
+		if hero.walk_texture == null:
+			continue
+		var image: Image = hero.walk_texture.get_image()
+		var hf: int = maxi(1, hero.walk_hframes)
+		var vf: int = maxi(1, hero.walk_vframes)
+		var cell_w: int = image.get_width() / hf
+		var cell_h: int = image.get_height() / vf
+		var lowest: int = -1
+		var highest: int = -1
+		for r in vf:
+			for c in hf:
+				var baseline: int = -1
+				for y in range(cell_h - 1, -1, -1):
+					var hit := false
+					# Sampling every 4th column is ample for locating a baseline.
+					for x in range(0, cell_w, 4):
+						if image.get_pixel(c * cell_w + x, r * cell_h + y).a > 0.03:
+							hit = true
+							break
+					if hit:
+						baseline = y
+						break
+				if baseline < 0:
+					continue
+				if lowest < 0 or baseline > lowest:
+					lowest = baseline
+				if highest < 0 or baseline < highest:
+					highest = baseline
+		var spread: int = lowest - highest
+		_check(spread <= int(cell_h * 0.03) + 2,
+				"%s walk frames share a feet baseline (spread %d px)" % [
+					hero.hero_name, spread])

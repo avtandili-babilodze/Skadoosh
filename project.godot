@@ -24,6 +24,10 @@ Roster="*res://autoload/roster.gd"
 
 window/stretch/mode="canvas_items"
 
+[physics]
+
+common/physics_ticks_per_second=120
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
