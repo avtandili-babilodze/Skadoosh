@@ -1,0 +1,130 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=16 format=3]
+
+[ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
+[ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/idle_sheet.png" id="3_idle"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/run_sheet.png" id="4_run"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/jump_sheet.png" id="5_jump"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/fall_sheet.png" id="6_fall"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/light_attack_sheet.png" id="7_light"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/heavy_attack_sheet.png" id="8_heavy"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/hurt_sheet.png" id="9_hurt"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/land_sheet.png" id="10_land"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/death_sheet.png" id="11_death"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/icon.png" id="12_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/akane/fire_pillar_sheet.png" id="13_pillar"]
+
+[sub_resource type="Resource" id="light"]
+script = ExtResource("2_atk")
+skill_name = "Ember Flick"
+kind = 0
+damage = 6.0
+knockback = 340.0
+knockback_up_ratio = 0.18
+startup_time = 0.08
+active_time = 0.1
+recovery_time = 0.16
+post_end_lag = 0.3
+cooldown = 0.45
+animation_texture = ExtResource("7_light")
+animation_hframes = 11
+animation_vframes = 1
+animation_frames = 11
+animation_release_frame = 4
+animation_sprite_height = 140.2
+animation_faces_right = true
+reach = 76.0
+height = 70.0
+
+[sub_resource type="Resource" id="heavy"]
+script = ExtResource("2_atk")
+skill_name = "Pyre Pillar"
+kind = 2
+damage = 14.0
+knockback = 540.0
+knockback_up_ratio = 0.55
+startup_time = 0.3
+active_time = 0.1
+recovery_time = 0.3
+post_end_lag = 0.5
+cooldown = 1.1
+animation_texture = ExtResource("8_heavy")
+animation_hframes = 3
+animation_vframes = 5
+animation_frames = 15
+animation_release_frame = 6
+animation_sprite_height = 140.2
+animation_faces_right = true
+ground_spike_texture = ExtResource("13_pillar")
+ground_spike_distance = 300.0
+ground_spike_delay = 0.3
+ground_spike_active_time = 0.24
+ground_spike_fade_time = 0.3
+ground_spike_hitbox_size = Vector2(90, 190)
+ground_spike_hframes = 3
+ground_spike_vframes = 2
+ground_spike_frames = 6
+ground_spike_sprite_height = 210.0
+
+[resource]
+script = ExtResource("1_hero")
+hero_name = "Akane"
+description = "A haughty fire witch who flicks embers at anyone too close and calls pillars of flame down on everyone else."
+speed = 265.0
+ground_acceleration = 3000.0
+air_acceleration = 900.0
+jump_velocity = -660.0
+gravity_scale = 1.3
+defense = 2.5
+knockback_percent_scale = 1.0
+light_attack = SubResource("light")
+heavy_attack = SubResource("heavy")
+jump_texture = ExtResource("5_jump")
+fall_texture = ExtResource("6_fall")
+jump_hframes = 7
+jump_vframes = 1
+jump_frames = 7
+jump_fps = 24.0
+fall_hframes = 7
+fall_vframes = 1
+fall_frames = 7
+fall_fps = 24.0
+air_faces_right = true
+air_sprite_height = 140.2
+walk_texture = ExtResource("4_run")
+walk_hframes = 4
+walk_vframes = 4
+walk_frames = 16
+walk_fps = 40.0
+walk_sprite_height = 140.2
+walk_faces_right = true
+icon = ExtResource("12_icon")
+texture = ExtResource("3_idle")
+faces_right = true
+color = Color(0.86, 0.22, 0.26, 1)
+sprite_height = 140.2
+idle_hframes = 6
+idle_vframes = 2
+idle_frames = 12
+idle_fps = 10.0
+hurt_texture = ExtResource("9_hurt")
+hurt_hframes = 7
+hurt_vframes = 1
+hurt_frames = 7
+hurt_fps = 36.0
+hurt_sprite_height = 140.2
+hurt_faces_right = true
+land_texture = ExtResource("10_land")
+land_hframes = 7
+land_vframes = 1
+land_frames = 7
+land_fps = 32.0
+land_sprite_height = 140.2
+land_faces_right = true
+death_texture = ExtResource("11_death")
+death_hframes = 5
+death_vframes = 1
+death_frames = 5
+death_fps = 20.0
+death_sprite_height = 140.2
+death_faces_right = true

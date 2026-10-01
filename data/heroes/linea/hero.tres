@@ -1,14 +1,15 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=14 format=3 uid="uid://voqc2jrwlw2f"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=15 format=3 uid="uid://voqc2jrwlw2f"]
 
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
-[ext_resource type="Texture2D" uid="uid://dcymplo2uffg6" path="res://data/heroes/linea/idle.png" id="3_tex"]
-[ext_resource type="Texture2D" uid="uid://b1xcxpblho8ds" path="res://data/heroes/linea/attack.png" id="4_pose"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/idle_sheet.png" id="3_tex"]
+[ext_resource type="Texture2D" uid="uid://b1xcxpblho8ds" path="res://data/heroes/linea/attack_pose.png" id="4_pose"]
 [ext_resource type="Texture2D" uid="uid://cbegcmtg3qwlh" path="res://data/heroes/linea/fireball.png" id="5_fire"]
-[ext_resource type="Texture2D" uid="uid://bryyhjc0o484v" path="res://data/heroes/linea/linea_walking.png" id="6_walk"]
-[ext_resource type="Texture2D" uid="uid://hsqbgxjo770o" path="res://data/heroes/linea/jump.png" id="7_jump"]
-[ext_resource type="Texture2D" uid="uid://c34iccclan1jx" path="res://data/heroes/linea/fall.png" id="8_fall"]
-[ext_resource type="Texture2D" uid="uid://y2m64fll86id" path="res://data/heroes/linea/linea_icon.png" id="9_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/walk_sheet.png" id="6_walk"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/jump_sheet.png" id="7_jump"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/fall.png" id="8_fall"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/land_sheet.png" id="12_land"]
+[ext_resource type="Texture2D" uid="uid://y2m64fll86id" path="res://data/heroes/linea/icon.png" id="9_icon"]
 [ext_resource type="Texture2D" path="res://data/heroes/linea/light_attack_sheet.png" id="10_light_anim"]
 [ext_resource type="Texture2D" path="res://data/heroes/linea/heavy_attack_sheet.png" id="11_heavy_anim"]
 
@@ -80,17 +81,30 @@ heavy_attack = SubResource("heavy")
 attack_texture = ExtResource("4_pose")
 attack_faces_right = true
 walk_texture = ExtResource("6_walk")
-walk_hframes = 4
+walk_hframes = 6
 walk_vframes = 2
-walk_frames = 8
-walk_fps = 16.0
-walk_sprite_height = 130.0
+walk_frames = 12
+walk_fps = 24.0
+walk_sprite_height = 108.8
 walk_faces_right = true
 jump_texture = ExtResource("7_jump")
 fall_texture = ExtResource("8_fall")
+jump_hframes = 5
+jump_frames = 5
+jump_fps = 12.0
 air_faces_right = true
-air_sprite_height = 100.0
+air_sprite_height = 117.64
+land_texture = ExtResource("12_land")
+land_hframes = 5
+land_frames = 5
+land_fps = 16.0
+land_sprite_height = 117.64
+land_faces_right = true
 texture = ExtResource("3_tex")
-faces_right = false
+faces_right = true
 color = Color(0.8, 0.4, 0.9, 1)
-sprite_height = 110.0
+sprite_height = 107.85
+idle_hframes = 11
+idle_vframes = 2
+idle_frames = 22
+idle_fps = 6.0

@@ -6,7 +6,7 @@
 [ext_resource type="Texture2D" path="res://data/heroes/lilith/walk_sheet.png" id="4_walk"]
 [ext_resource type="Texture2D" path="res://data/heroes/lilith/light_attack_sheet.png" id="5_light"]
 [ext_resource type="Texture2D" path="res://data/heroes/lilith/heavy_attack_sheet.png" id="6_heavy"]
-[ext_resource type="Texture2D" path="res://data/heroes/lilith/lilith_icon.png" id="7_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/lilith/icon.png" id="7_icon"]
 [ext_resource type="Texture2D" path="res://data/heroes/lilith/hurt_sheet.png" id="8_hurt"]
 [ext_resource type="Texture2D" path="res://data/heroes/lilith/death_sheet.png" id="9_death"]
 

@@ -130,6 +130,22 @@ extends Resource
 ## Set FALSE if the hurt art is drawn facing left.
 @export var hurt_faces_right: bool = true
 
+@export_group("Landing Animation")
+## Optional sheet played once on touching down (a crouch that rises back to
+## standing). Moving, jumping or attacking cuts it short. Without it, the fighter
+## lands with a procedural squash instead.
+@export var land_texture: Texture2D
+@export var land_hframes: int = 1
+@export var land_vframes: int = 1
+## Frames to play (0 = hframes × vframes).
+@export var land_frames: int = 0
+## Keep it quick: a landing that lingers makes controls feel sluggish.
+@export var land_fps: float = 16.0
+## On-screen height of one sheet cell, in px. Match the other poses.
+@export var land_sprite_height: float = 110.0
+## Set FALSE if the landing art is drawn facing left.
+@export var land_faces_right: bool = true
+
 @export_group("Death Animation")
 ## Optional death sheet. The game does not play it yet (a ring-out removes the
 ## fighter); it is kept with the hero so it can be switched on without re-cutting art.

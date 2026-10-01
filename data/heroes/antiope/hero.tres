@@ -10,7 +10,7 @@
 [ext_resource type="Texture2D" path="res://data/heroes/antiope/heavy_attack_sheet.png" id="8_heavy"]
 [ext_resource type="Texture2D" path="res://data/heroes/antiope/hurt_sheet.png" id="9_hurt"]
 [ext_resource type="Texture2D" path="res://data/heroes/antiope/death_sheet.png" id="10_death"]
-[ext_resource type="Texture2D" path="res://data/heroes/antiope/antiope_icon.png" id="11_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/antiope/icon.png" id="11_icon"]
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")

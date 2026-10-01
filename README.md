@@ -90,6 +90,14 @@ Idle poses can be animated, and fighters with hurt art flinch while stunned.
   tails down for a close-range **Foxfire Eruption** (heavy).
 - **Antiope** — an Amazon warrior: a quick **Shield Bash** (light) and a sweeping
   **Amazon Cleave** (heavy). Tanky, with a shield-bearer's defense.
+- **Musashi** — a wandering ronin under a wide straw hat: an **Iai Slash** (light)
+  drawn and cut straight from the scabbard, and a two-handed rising **Crescent
+  Moon Cut** (heavy) that knocks foes up and away. A balanced swordsman with mid
+  defense.
+- **Akane** — a haughty fire witch: a dismissive **Ember Flick** (light) that sprays
+  flame at close range, and a finger-snap **Pyre Pillar** (heavy) that erupts a
+  column of fire about four game meters ahead, launching whoever stands in it.
+  Light on her feet and floaty in the air, but fragile.
 
 > Want to tweak balance or add a hero? Edit the numbers in
 > `data/heroes/<name>/hero.tres` — no player-code changes are needed. Add a new
@@ -98,7 +106,11 @@ Idle poses can be animated, and fighters with hurt art flinch while stunned.
 ### Adding character artwork
 
 Create a folder such as `data/heroes/my_hero/` and put the character PNG files
-there. A complete fighter can provide:
+there, named like every other hero's: `icon.png`, `idle.png` (or `idle_sheet.png`),
+`walk_sheet.png` (or `run_sheet.png`), `jump.png`/`jump_sheet.png`,
+`fall.png`/`fall_sheet.png`, `light_attack_sheet.png`, `heavy_attack_sheet.png`,
+`hurt_sheet.png`, `death_sheet.png`, plus effect art named after what it is
+(`fireball.png`, `wave.png`, ...). A complete fighter can provide:
 
 - an `icon.png` for the select screen and HUD
 - an idle image, or an animated idle sheet (`idle_hframes`, `idle_frames`, `idle_fps`)
@@ -108,6 +120,7 @@ there. A complete fighter can provide:
 - separate light- and heavy-attack sheets, each with an optional
   `animation_release_frame` so the hit lands on the frame that draws it
 - optional hurt sheet, played while stunned (`hurt_*`)
+- optional landing sheet, played once on touchdown (`land_*`); moving cuts it short
 - optional death sheet (`death_*`) — kept with the hero, not played yet
 - optional projectile or ground-spike effect art for special attacks
 
@@ -133,7 +146,9 @@ With Godot 4.3 available, run the dependency-free headless suite with:
 godot --headless --path . tests/test_runner.tscn
 ```
 
-Besides gameplay, it checks every fighter's sheets: equal grids, transparent corners,
+Checks are grouped into suites in `tests/suites/` (hero data, animation, combat,
+scenes), with shared pixel helpers in `tests/support/`. Besides gameplay, they check
+every fighter's sheets: equal grids, transparent corners,
 one shared ground line, and legs that keep pace with movement at a natural speed.
 The release workflow runs the same suite before exporting the Windows build.
 
