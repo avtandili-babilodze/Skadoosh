@@ -44,10 +44,21 @@ enum Kind { MELEE, RANGED, GROUND_SPIKE }
 ## the art's key pose (a whip cracking, a fireball leaving the hand) must line up
 ## with the hit. -1 spreads every frame evenly across the whole attack instead.
 @export var animation_release_frame: int = -1
+## How many frames, starting at the release frame, play across the active
+## window. 1 holds the release pose for the whole window; a sword swing drawn
+## over three frames sets 3 so the blade keeps moving while the hit is live.
+@export var animation_active_frames: int = 1
 ## Height used to scale one complete sheet cell on screen.
 @export var animation_sprite_height: float = 110.0
 ## Set FALSE if the animation artwork is drawn facing left.
 @export var animation_faces_right: bool = true
+
+@export_group("Effect")
+## A drawn elemental effect (ToonEffect preset: "fireball", "foxfire_orb",
+## "water_spit", "water_wave", "fire_pillar", "dark_eruption", "foxfire_burst",
+## "fire_burst", ...). For a projectile or ground spike it replaces the texture;
+## for a melee skill it bursts out over the hitbox during the active window.
+@export var effect: String = ""
 
 @export_group("Melee reach")
 ## Horizontal reach of the hitbox, in pixels.
@@ -56,15 +67,23 @@ enum Kind { MELEE, RANGED, GROUND_SPIKE }
 @export var height: float = 90.0
 
 @export_group("Ranged projectile")
-## Projectile image (required when kind is RANGED).
+## Projectile image (required when kind is RANGED): a single picture, or a
+## sheet when the grid below is set.
 @export var projectile_texture: Texture2D
+## Optional sheet grid for an animated projectile. The defaults (1 x 1) keep a
+## single still image. The animation loops for as long as the projectile flies.
+@export var projectile_hframes: int = 1
+@export var projectile_vframes: int = 1
+## Frames to play (0 = hframes x vframes).
+@export var projectile_frames: int = 0
+@export var projectile_fps: float = 14.0
 ## Travel speed, in pixels/second.
 @export var projectile_speed: float = 700.0
 ## Max travel distance before it fizzles, in pixels (0 = unlimited).
 @export var projectile_range: float = 500.0
 ## Despawn after this long if it hits nothing, in seconds.
 @export var projectile_lifetime: float = 2.0
-## On-screen height of the projectile art, in pixels.
+## On-screen height of the projectile art (one sheet cell), in pixels.
 @export var projectile_height: float = 70.0
 ## Radius of the projectile collision circle, in pixels.
 @export var projectile_radius: float = 28.0

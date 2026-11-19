@@ -8,7 +8,7 @@ const PLAYER_SCENE := preload("res://entities/player/player.tscn")
 var t
 
 
-func run(runner: Node) -> void:
+func run(runner: Node) -> bool:
 	t = runner
 	await _test_sprite_scale_stability()
 	await _test_procedural_motion()
@@ -16,9 +16,10 @@ func run(runner: Node) -> void:
 	await _test_hurt_animation()
 	_test_attack_release_frame()
 	await _test_landing_animation()
+	return true
 
 func _test_sprite_scale_stability() -> void:
-	for hero: HeroData in Roster.heroes:
+	for hero: HeroData in sheet_heroes():
 		if hero.walk_texture == null:
 			continue
 		var fighter = PLAYER_SCENE.instantiate()
@@ -49,7 +50,12 @@ func _test_sprite_scale_stability() -> void:
 ## Procedural secondary motion: the effects that keep a low-frame-count sprite
 ## moving between drawn frames.
 func _test_procedural_motion() -> void:
-	var hero: HeroData = Roster.heroes[0]
+	# A fighter without landing art falls back to the procedural squash, so the
+	# test strips the landing sheet from a copy of a real hero.
+	if sheet_heroes().is_empty():
+		return
+	var hero: HeroData = sheet_heroes()[0].duplicate()
+	hero.land_texture = null
 	if hero.walk_texture == null:
 		return
 	var fighter = PLAYER_SCENE.instantiate()
@@ -107,7 +113,7 @@ func _test_procedural_motion() -> void:
 
 ## An idle sheet loops on the render clock like the walk cycle does.
 func _test_idle_animation() -> void:
-	for hero: HeroData in Roster.heroes:
+	for hero: HeroData in sheet_heroes():
 		var count: int = hero.idle_frames if hero.idle_frames > 0 else hero.idle_hframes * hero.idle_vframes
 		if count <= 1 or hero.texture == null:
 			continue
@@ -133,7 +139,7 @@ func _test_idle_animation() -> void:
 
 ## A hero with hurt art shows it while stunned, plays it once, then lets go.
 func _test_hurt_animation() -> void:
-	for hero: HeroData in Roster.heroes:
+	for hero: HeroData in sheet_heroes():
 		if hero.hurt_texture == null:
 			continue
 		var fighter = PLAYER_SCENE.instantiate()
@@ -182,6 +188,19 @@ func _test_attack_release_frame() -> void:
 			ordered = false
 		previous = frame
 	t.check(ordered, "release-frame playback never runs backwards")
+	# A swing drawn over several frames keeps moving through the active window.
+	skill.animation_release_frame = 3
+	skill.animation_active_frames = 3
+	t.check(FighterVisuals.attack_frame_at(skill, 0.161, frames) == 3,
+			"a multi-frame swing opens the active window on its release frame")
+	t.check(FighterVisuals.attack_frame_at(skill, 0.19, frames) == 4
+			and FighterVisuals.attack_frame_at(skill, 0.219, frames) == 5,
+			"a multi-frame swing plays through the active window")
+	t.check(FighterVisuals.attack_frame_at(skill, 0.221, frames) == 6,
+			"recovery starts on the frame after the swing")
+	t.check(FighterVisuals.attack_frame_at(skill, 0.499, frames) == frames - 1,
+			"a multi-frame swing still finishes on the last frame")
+	skill.animation_active_frames = 1
 	skill.animation_release_frame = -1
 	t.check(FighterVisuals.attack_frame_at(skill, 0.25, frames) == 4,
 			"without a release frame, frames still spread evenly")
@@ -190,7 +209,7 @@ func _test_attack_release_frame() -> void:
 ## Dropped onto a real floor, a fighter with landing art plays it on touchdown,
 ## then hands back to idle; landing while moving cuts straight into the walk.
 func _test_landing_animation() -> void:
-	for hero: HeroData in Roster.heroes:
+	for hero: HeroData in sheet_heroes():
 		if hero.land_texture == null:
 			continue
 		var who := hero.hero_name
@@ -239,3 +258,12 @@ func _wait_until_landed(fighter) -> bool:
 			return true
 	return false
 
+
+## Fighters still drawn from sprite sheets. Rigged fighters (a live skeleton)
+## are covered by rig_suite.gd; these checks are about the sheet path.
+static func sheet_heroes() -> Array[HeroData]:
+	var out: Array[HeroData] = []
+	for hero: HeroData in Roster.heroes:
+		if hero.rig == null:
+			out.append(hero)
+	return out

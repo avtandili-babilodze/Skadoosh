@@ -27,6 +27,14 @@ var _end_scale: float = 1.0
 var _end_damage_multiplier: float = 1.0
 var _grounded: bool = false
 var _base_visual_scale: float = 1.0
+var _age: float = 0.0
+var _tint: Color = Color.WHITE
+var _hframes: int = 1
+var _vframes: int = 1
+var _frame_count: int = 1
+var _fps: float = 0.0
+var _effect_name: String = ""
+var _effect: ToonEffect = null
 
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _collision_shape: CollisionShape2D = $CollisionShape2D
@@ -58,6 +66,22 @@ func configure(shooter: Node, facing: float, damage: float, knockback: float, up
 	_grounded = grounded
 
 
+## Draws the projectile as a toon effect preset instead of its texture. Call
+## before add_child, like configure().
+func set_effect(preset: String) -> void:
+	_effect_name = preset if ToonEffect.has_preset(preset) else ""
+
+
+## Makes the projectile play a looping sheet instead of a still image. Call
+## before add_child, like configure(). `frames` 0 plays the whole grid.
+func set_animation(hframes: int, vframes: int, frames: int, fps: float) -> void:
+	_hframes = maxi(1, hframes)
+	_vframes = maxi(1, vframes)
+	_frame_count = frames if frames > 0 else _hframes * _vframes
+	_frame_count = clampi(_frame_count, 1, _hframes * _vframes)
+	_fps = maxf(0.0, fps)
+
+
 func _ready() -> void:
 	add_to_group("projectiles")
 	body_entered.connect(_on_body_entered)
@@ -68,22 +92,62 @@ func _ready() -> void:
 		circle = circle.duplicate()
 		circle.radius = _collision_radius
 		_collision_shape.shape = circle
-	if _texture != null:
+	if _effect_name != "":
+		_effect = ToonEffect.new(_effect_name, _art_height, _dir < 0.0)
+		add_child(_effect)
+		_sprite.visible = false
+	elif _texture != null:
 		_sprite.texture = _texture
-		var h := _texture.get_height()
-		if h > 0:
+		_sprite.hframes = _hframes
+		_sprite.vframes = _vframes
+		var h := _texture.get_height() / float(_vframes)
+		if h > 0.0:
 			_base_visual_scale = _art_height / h
 		# Face the direction of travel.
 		_sprite.flip_h = (_dir > 0.0) != _art_faces_right
+	# The fighter script preloads this scene, so naming its class here would make
+	# the two scripts depend on each other while loading. Ask by property instead.
+	if is_instance_valid(_shooter) and "hero" in _shooter:
+		_tint = Roster.accent_of(_shooter.hero)
+	if Fx.is_active() and _effect == null:
+		_add_trail()
 	_apply_travel_progress()
+
+
+## A wake of square sparks in the caster's colour, left in the world as the
+## projectile flies.
+func _add_trail() -> void:
+	var trail := CPUParticles2D.new()
+	trail.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	trail.amount = 18
+	trail.lifetime = 0.32
+	trail.local_coords = false
+	trail.direction = Vector2(-_dir, 0.0)
+	trail.spread = 28.0
+	trail.initial_velocity_min = 20.0
+	trail.initial_velocity_max = 90.0
+	trail.gravity = Vector2.ZERO
+	trail.scale_amount_min = 2.5
+	trail.scale_amount_max = 5.0
+	trail.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	trail.emission_sphere_radius = _collision_radius * 0.5
+	var fade := Gradient.new()
+	fade.set_color(0, Color(_tint.lerp(Color.WHITE, 0.5), 0.9))
+	fade.set_color(1, Color(_tint, 0.0))
+	trail.color_ramp = fade
+	trail.z_index = -1
+	add_child(trail)
 
 
 func _physics_process(delta: float) -> void:
 	# Hold the exact endpoint for one physics frame so a target at maximum range
 	# can still overlap and receive the full distance-scaled damage.
 	if _range_expires_next_tick:
+		Fx.burst(global_position + _collision_shape.position, _tint.lerp(Color.WHITE, 0.4),
+				8, 150.0, Vector2(_dir, -0.4), 90.0, 0.3, 4.0, 200.0)
 		queue_free()
 		return
+	_age += delta
 	var step := _velocity * delta
 	if _travel_range > 0.0 and step.length() > _range_left:
 		step = step.normalized() * _range_left
@@ -98,12 +162,9 @@ func _physics_process(delta: float) -> void:
 			_range_expires_next_tick = true
 	_apply_travel_progress()
 
-	# Safety nets: despawn after its lifetime, or if it flies off the visible area.
+	# Safety net: despawn after its lifetime even if it never reaches its range.
 	_life_left -= delta
 	if _life_left <= 0.0:
-		queue_free()
-		return
-	if not get_viewport_rect().grow(150.0).has_point(global_position):
 		queue_free()
 
 
@@ -124,7 +185,16 @@ func get_current_damage() -> float:
 
 func _apply_travel_progress() -> void:
 	var growth := get_current_growth()
-	_sprite.scale = Vector2(_base_visual_scale * growth, _base_visual_scale * growth)
+	# A quick breathing pulse keeps a single still image feeling alive in flight.
+	var pulse := 1.0 + sin(_age * 22.0) * 0.05
+	_sprite.scale = Vector2(_base_visual_scale * growth * pulse, _base_visual_scale * growth / pulse)
+	if _effect == null and _frame_count > 1 and _fps > 0.0:
+		_sprite.frame = int(_age * _fps) % _frame_count
+	if _effect != null:
+		_effect.set_height(_art_height * growth)
+		_effect.position.y = 0.0
+		# A wave rises out of the floor during its first moments.
+		_effect.set_grow(minf(1.0, 0.35 + _age * 5.0))
 	var current_radius := _collision_radius * growth
 	var circle := _collision_shape.shape as CircleShape2D
 	if circle != null:
@@ -138,8 +208,10 @@ func _apply_travel_progress() -> void:
 
 
 func _on_body_entered(body: Node) -> void:
-	if body == _shooter:
+	var caster: Node = _shooter if is_instance_valid(_shooter) else null
+	if body == caster:
 		return  # never hit the caster
 	if body.is_in_group("players") and body.has_method("take_hit"):
-		body.take_hit(get_current_damage(), _knockback, _dir, _up_ratio)
+		body.take_hit(get_current_damage(), _knockback, _dir, _up_ratio, caster, true,
+				ToonEffect.sound_kind(_effect_name))
 		queue_free()

@@ -1,18 +1,22 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=12 format=3]
+[gd_resource type="Resource" script_class="HeroData" load_steps=17 format=3]
 
+[ext_resource type="JSON" path="res://data/heroes/primordial_demon/rig/rig.json" id="90_rig"]
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
-[ext_resource type="Script" path="res://data/attack_data.gd" id="2_attack"]
-[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/idle.png" id="3_idle"]
-[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/icon.png" id="4_icon"]
-[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/walk_sheet.png" id="5_walk"]
-[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/jump_sheet.png" id="6_jump"]
-[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/fall_sheet.png" id="7_dive"]
-[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/light_attack_sheet.png" id="8_light"]
-[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/heavy_attack_sheet.png" id="9_heavy"]
-[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/ground_spike_sheet.png" id="10_spike"]
+[ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/idle_sheet.png" id="3_idle"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/run_sheet.png" id="4_run"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/jump_sheet.png" id="5_jump"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/fall_sheet.png" id="6_fall"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/land_sheet.png" id="7_land"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/light_attack_sheet.png" id="8_light_attack"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/heavy_attack_sheet.png" id="9_heavy_attack"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/hurt_sheet.png" id="10_hurt"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/death_sheet.png" id="11_death"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/icon.png" id="12_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/primordial_demon/ground_spike_sheet.png" id="13_extra"]
 
-[sub_resource type="Resource" id="light_attack"]
-script = ExtResource("2_attack")
+[sub_resource type="Resource" id="light"]
+script = ExtResource("2_atk")
 skill_name = "Dark Matter Slash"
 kind = 0
 damage = 7.5
@@ -23,17 +27,19 @@ active_time = 0.06
 recovery_time = 0.09
 post_end_lag = 0.3
 cooldown = 0.6
-animation_texture = ExtResource("8_light")
-animation_hframes = 3
-animation_vframes = 2
-animation_frames = 6
-animation_sprite_height = 178.0
+animation_texture = ExtResource("8_light_attack")
+animation_hframes = 10
+animation_vframes = 1
+animation_frames = 10
+animation_release_frame = 4
+animation_sprite_height = 140.2
 animation_faces_right = true
 reach = 120.0
 height = 100.0
+animation_active_frames = 3
 
-[sub_resource type="Resource" id="heavy_attack"]
-script = ExtResource("2_attack")
+[sub_resource type="Resource" id="heavy"]
+script = ExtResource("2_atk")
 skill_name = "Primordial Eruption"
 kind = 2
 damage = 15.0
@@ -44,13 +50,14 @@ active_time = 0.08
 recovery_time = 0.24
 post_end_lag = 0.5
 cooldown = 1.3
-animation_texture = ExtResource("9_heavy")
-animation_hframes = 3
-animation_vframes = 2
-animation_frames = 6
-animation_sprite_height = 192.0
+animation_texture = ExtResource("9_heavy_attack")
+animation_hframes = 14
+animation_vframes = 1
+animation_frames = 14
+animation_release_frame = 6
+animation_sprite_height = 140.2
 animation_faces_right = true
-ground_spike_texture = ExtResource("10_spike")
+ground_spike_texture = ExtResource("13_extra")
 ground_spike_distance = 320.0
 ground_spike_delay = 0.38
 ground_spike_active_time = 0.24
@@ -60,9 +67,11 @@ ground_spike_hframes = 3
 ground_spike_vframes = 2
 ground_spike_frames = 6
 ground_spike_sprite_height = 190.0
-
+effect = "dark_eruption"
 [resource]
 script = ExtResource("1_hero")
+rig = ExtResource("90_rig")
+weapon_sound = "claw"
 hero_name = "Primordial Demon"
 description = "A heavy dark-matter fighter. Slashes up close and erupts the ground four meters away."
 speed = 285.0
@@ -81,29 +90,54 @@ dodge_cooldown = 1.6
 defense = 7.0
 knockback_percent_scale = 0.95
 min_attack_interval = 0.35
-light_attack = SubResource("light_attack")
-heavy_attack = SubResource("heavy_attack")
-jump_texture = ExtResource("6_jump")
-fall_texture = ExtResource("7_dive")
-jump_hframes = 3
-jump_vframes = 2
-jump_frames = 6
-jump_fps = 14.0
-fall_hframes = 3
-fall_vframes = 2
-fall_frames = 6
-fall_fps = 12.0
+light_attack = SubResource("light")
+heavy_attack = SubResource("heavy")
+jump_texture = ExtResource("5_jump")
+fall_texture = ExtResource("6_fall")
+jump_hframes = 8
+jump_vframes = 1
+jump_frames = 8
+jump_fps = 16.0
+fall_hframes = 8
+fall_vframes = 1
+fall_frames = 8
+fall_fps = 14.0
 air_faces_right = true
-air_sprite_height = 155.0
-walk_texture = ExtResource("5_walk")
-walk_hframes = 3
-walk_vframes = 2
-walk_frames = 6
-walk_fps = 12.0
-walk_sprite_height = 155.0
+air_sprite_height = 140.2
+walk_texture = ExtResource("4_run")
+walk_hframes = 14
+walk_vframes = 1
+walk_frames = 14
+walk_fps = 27.0
+walk_sprite_height = 140.2
 walk_faces_right = true
-icon = ExtResource("4_icon")
+icon = ExtResource("12_icon")
 texture = ExtResource("3_idle")
 faces_right = true
 color = Color(0.12, 0.1, 0.17, 1)
-sprite_height = 150.0
+sprite_height = 140.2
+idle_hframes = 28
+idle_vframes = 1
+idle_frames = 28
+idle_fps = 10.0
+hurt_texture = ExtResource("10_hurt")
+hurt_hframes = 8
+hurt_vframes = 1
+hurt_frames = 8
+hurt_fps = 18.0
+hurt_sprite_height = 140.2
+hurt_faces_right = true
+land_texture = ExtResource("7_land")
+land_hframes = 8
+land_vframes = 1
+land_frames = 8
+land_fps = 18.0
+land_sprite_height = 140.2
+land_faces_right = true
+death_texture = ExtResource("11_death")
+death_hframes = 14
+death_vframes = 1
+death_frames = 14
+death_fps = 10.0
+death_sprite_height = 140.2
+death_faces_right = true

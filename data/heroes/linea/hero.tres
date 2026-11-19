@@ -1,17 +1,20 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=15 format=3 uid="uid://voqc2jrwlw2f"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=18 format=3 uid="uid://voqc2jrwlw2f"]
 
+[ext_resource type="JSON" path="res://data/heroes/linea/rig/rig.json" id="90_rig"]
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
 [ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
-[ext_resource type="Texture2D" path="res://data/heroes/linea/idle_sheet.png" id="3_tex"]
-[ext_resource type="Texture2D" uid="uid://b1xcxpblho8ds" path="res://data/heroes/linea/attack_pose.png" id="4_pose"]
-[ext_resource type="Texture2D" uid="uid://cbegcmtg3qwlh" path="res://data/heroes/linea/fireball.png" id="5_fire"]
-[ext_resource type="Texture2D" path="res://data/heroes/linea/walk_sheet.png" id="6_walk"]
-[ext_resource type="Texture2D" path="res://data/heroes/linea/jump_sheet.png" id="7_jump"]
-[ext_resource type="Texture2D" path="res://data/heroes/linea/fall.png" id="8_fall"]
-[ext_resource type="Texture2D" path="res://data/heroes/linea/land_sheet.png" id="12_land"]
-[ext_resource type="Texture2D" uid="uid://y2m64fll86id" path="res://data/heroes/linea/icon.png" id="9_icon"]
-[ext_resource type="Texture2D" path="res://data/heroes/linea/light_attack_sheet.png" id="10_light_anim"]
-[ext_resource type="Texture2D" path="res://data/heroes/linea/heavy_attack_sheet.png" id="11_heavy_anim"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/idle_sheet.png" id="3_idle"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/run_sheet.png" id="4_run"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/jump_sheet.png" id="5_jump"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/fall_sheet.png" id="6_fall"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/land_sheet.png" id="7_land"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/light_attack_sheet.png" id="8_light_attack"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/heavy_attack_sheet.png" id="9_heavy_attack"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/hurt_sheet.png" id="10_hurt"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/death_sheet.png" id="11_death"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/icon.png" id="12_icon"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/firejab_sheet.png" id="13_extra"]
+[ext_resource type="Texture2D" path="res://data/heroes/linea/fireball_sheet.png" id="14_extra"]
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")
@@ -25,12 +28,14 @@ active_time = 0.08
 recovery_time = 0.16
 post_end_lag = 0.3
 cooldown = 0.6
-animation_texture = ExtResource("10_light_anim")
-animation_hframes = 4
-animation_frames = 4
-animation_sprite_height = 240.0
+animation_texture = ExtResource("8_light_attack")
+animation_hframes = 12
+animation_vframes = 1
+animation_frames = 12
+animation_release_frame = 3
+animation_sprite_height = 140.2
 animation_faces_right = true
-projectile_texture = ExtResource("5_fire")
+projectile_texture = ExtResource("13_extra")
 projectile_speed = 260.0
 projectile_range = 20.0
 projectile_lifetime = 0.8
@@ -38,7 +43,12 @@ projectile_height = 38.0
 projectile_radius = 18.0
 projectile_faces_right = true
 projectile_spawn_offset = Vector2(48, -6)
-
+animation_active_frames = 2
+projectile_hframes = 6
+projectile_vframes = 1
+projectile_frames = 6
+projectile_fps = 14.0
+effect = "flame_jab"
 [sub_resource type="Resource" id="heavy"]
 script = ExtResource("2_atk")
 skill_name = "Fireball"
@@ -51,12 +61,14 @@ active_time = 0.06
 recovery_time = 0.28
 post_end_lag = 0.5
 cooldown = 1.0
-animation_texture = ExtResource("11_heavy_anim")
-animation_hframes = 4
-animation_frames = 4
-animation_sprite_height = 210.0
+animation_texture = ExtResource("9_heavy_attack")
+animation_hframes = 14
+animation_vframes = 1
+animation_frames = 14
+animation_release_frame = 6
+animation_sprite_height = 140.2
 animation_faces_right = true
-projectile_texture = ExtResource("5_fire")
+projectile_texture = ExtResource("14_extra")
 projectile_speed = 780.0
 projectile_range = 190.0
 projectile_lifetime = 2.0
@@ -64,11 +76,16 @@ projectile_height = 80.0
 projectile_radius = 34.0
 projectile_faces_right = true
 projectile_spawn_offset = Vector2(80, -8)
-
+animation_active_frames = 2
+projectile_hframes = 6
+projectile_vframes = 1
+projectile_frames = 6
+projectile_fps = 14.0
+effect = "fireball"
 [resource]
 script = ExtResource("1_hero")
+rig = ExtResource("90_rig")
 hero_name = "Linea"
-icon = ExtResource("9_icon")
 description = "A nimble glass cannon. Fragile, but zones with fireballs at range."
 speed = 300.0
 ground_acceleration = 2800.0
@@ -78,33 +95,52 @@ knockback_percent_scale = 1.0
 min_attack_interval = 0.5
 light_attack = SubResource("light")
 heavy_attack = SubResource("heavy")
-attack_texture = ExtResource("4_pose")
-attack_faces_right = true
-walk_texture = ExtResource("6_walk")
-walk_hframes = 6
-walk_vframes = 2
-walk_frames = 12
-walk_fps = 24.0
-walk_sprite_height = 108.8
-walk_faces_right = true
-jump_texture = ExtResource("7_jump")
-fall_texture = ExtResource("8_fall")
-jump_hframes = 5
-jump_frames = 5
-jump_fps = 12.0
+jump_texture = ExtResource("5_jump")
+fall_texture = ExtResource("6_fall")
+jump_hframes = 8
+jump_vframes = 1
+jump_frames = 8
+jump_fps = 16.0
+fall_hframes = 8
+fall_vframes = 1
+fall_frames = 8
+fall_fps = 14.0
 air_faces_right = true
-air_sprite_height = 117.64
-land_texture = ExtResource("12_land")
-land_hframes = 5
-land_frames = 5
-land_fps = 16.0
-land_sprite_height = 117.64
-land_faces_right = true
-texture = ExtResource("3_tex")
+air_sprite_height = 140.2
+walk_texture = ExtResource("4_run")
+walk_hframes = 14
+walk_vframes = 1
+walk_frames = 14
+walk_fps = 32.0
+walk_sprite_height = 140.2
+walk_faces_right = true
+icon = ExtResource("12_icon")
+texture = ExtResource("3_idle")
 faces_right = true
 color = Color(0.8, 0.4, 0.9, 1)
-sprite_height = 107.85
-idle_hframes = 11
-idle_vframes = 2
-idle_frames = 22
-idle_fps = 6.0
+sprite_height = 140.2
+idle_hframes = 28
+idle_vframes = 1
+idle_frames = 28
+idle_fps = 11.0
+hurt_texture = ExtResource("10_hurt")
+hurt_hframes = 8
+hurt_vframes = 1
+hurt_frames = 8
+hurt_fps = 18.0
+hurt_sprite_height = 140.2
+hurt_faces_right = true
+land_texture = ExtResource("7_land")
+land_hframes = 8
+land_vframes = 1
+land_frames = 8
+land_fps = 18.0
+land_sprite_height = 140.2
+land_faces_right = true
+death_texture = ExtResource("11_death")
+death_hframes = 14
+death_vframes = 1
+death_frames = 14
+death_fps = 10.0
+death_sprite_height = 140.2
+death_faces_right = true

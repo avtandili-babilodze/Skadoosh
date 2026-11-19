@@ -1,14 +1,19 @@
 extends Node2D
-## Off-screen player markers. For any player outside the visible screen, draws a
-## small arrow pinned to the nearest screen edge/corner, pointing toward them — so
-## a player off the side, the top, the bottom, or a corner (two edges at once) is
-## always tracked by a single triangle aimed in their actual direction.
-## P1 = white triangle (black outline), P2 = black triangle (white outline).
+## Off-screen player markers. For any fighter outside the visible screen, draws
+## a bubble pinned to the nearest screen edge/corner with that fighter's
+## portrait inside and an arrowhead aimed at where they really are — so a player
+## launched off the side, the top, the bottom or a corner is always tracked.
+## The bubble takes the player's colour (blue for P1, orange for P2).
 
-## Size of the arrow, in px.
-const SIZE := 14.0
-## Keep the arrow this far inside the screen edges (room for the triangle + label).
-const MARGIN := 22.0
+## Radius of the bubble, in px.
+const RADIUS := 24.0
+## Keep the bubble this far inside the screen edges.
+const MARGIN := 40.0
+
+
+func _ready() -> void:
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+
 
 func _process(_delta: float) -> void:
 	queue_redraw()
@@ -17,10 +22,13 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	var view := get_viewport_rect().size
 	var screen := Rect2(Vector2.ZERO, view)
+	# The HUD sits on its own canvas layer, so world positions are converted to
+	# screen positions through the world canvas (the camera's transform).
+	var to_screen := get_viewport().get_canvas_transform()
 	for p in get_tree().get_nodes_in_group("players"):
 		if not p.visible:
-			continue                       # eliminated / parked off-screen
-		var pos: Vector2 = p.global_position
+			continue                       # eliminated / waiting to respawn
+		var pos: Vector2 = to_screen * (p as Node2D).global_position
 		if screen.has_point(pos):
 			continue                       # on-screen — no marker needed
 		# Pin the marker to the screen edge/corner closest to the player; the arrow
@@ -31,22 +39,21 @@ func _draw() -> void:
 		var dir := pos - center
 		if dir.length() < 0.001:
 			continue
-		dir = dir.normalized()
-		var is_p1 := String(p.name) == "Player1"
-		_marker(center, dir,
-				Color.WHITE if is_p1 else Color.BLACK,
-				Color.BLACK if is_p1 else Color.WHITE,
-				"1" if is_p1 else "2")
+		var fighter := p as Fighter
+		var color := fighter.get_player_color() if fighter != null else Color.WHITE
+		var icon: Texture2D = fighter.hero.icon if fighter != null and fighter.hero != null else null
+		_marker(center, dir.normalized(), color, icon)
 
 
-## Draw an arrowhead at `center` pointing along `dir`, with the player number
-## placed just inside the screen from it.
-func _marker(center: Vector2, dir: Vector2, fill: Color, outline: Color, label: String) -> void:
+## Draws a portrait bubble at `center` with an arrowhead pointing along `dir`.
+func _marker(center: Vector2, dir: Vector2, color: Color, icon: Texture2D) -> void:
 	var ang := dir.angle()
-	var pts := PackedVector2Array()
-	for v in [Vector2(SIZE, 0.0), Vector2(-SIZE, -SIZE * 0.85), Vector2(-SIZE, SIZE * 0.85)]:
-		pts.append(v.rotated(ang) + center)
-	draw_colored_polygon(pts, fill)
-	draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), outline, 2.0)
-	var label_pos := center - dir * (SIZE + 12.0) + Vector2(-4.0, 6.0)
-	draw_string(ThemeDB.fallback_font, label_pos, label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, outline)
+	var tip := PackedVector2Array()
+	for v in [Vector2(RADIUS + 15.0, 0.0), Vector2(RADIUS - 2.0, -11.0), Vector2(RADIUS - 2.0, 11.0)]:
+		tip.append(v.rotated(ang) + center)
+	draw_colored_polygon(tip, color)
+	draw_circle(center, RADIUS + 3.0, color)
+	draw_circle(center, RADIUS, UI.INK)
+	if icon != null:
+		var half := RADIUS * 0.74
+		draw_texture_rect(icon, Rect2(center - Vector2(half, half), Vector2(half, half) * 2.0), false)

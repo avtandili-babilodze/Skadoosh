@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="MapData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://data/map_data.gd" id="1_map"]
+[ext_resource type="Texture2D" path="res://assets/maps/frost/bg.jpg" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/maps/frost/stage.png" id="3_stage"]
+[ext_resource type="Texture2D" path="res://assets/maps/frost/platform.png" id="4_platform"]
+
+[resource]
+script = ExtResource("1_map")
+id = "frost"
+map_name = "Frostfall Peak"
+description = "A broken keep under the aurora. A small floor and one platform that never stops gliding."
+background = ExtResource("2_bg")
+stage_texture = ExtResource("3_stage")
+platform_texture = ExtResource("4_platform")
+stage_art_line = Vector3(5, 1610, 1)
+platform_art_line = Vector3(4, 653, 0)
+accent = Color(0.5, 0.92, 1, 1)
+ambient = "snow"
+stage_width = 820.0
+platforms = Array[Vector3]([])
+moving_platform = Vector3(0, -124, 240)
+moving_platform_travel = 250.0
+moving_platform_period = 9.0
+spawn_points = PackedVector2Array(-184, 0, 184, 0)
+blast_zone = Rect2(-1130, -920, 2260, 1540)

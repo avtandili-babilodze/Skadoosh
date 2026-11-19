@@ -19,6 +19,10 @@ var _active_time: float = 0.18
 var _fade_time: float = 0.22
 var _elapsed: float = 0.0
 var _hit_targets: Dictionary = {}
+var _erupted: bool = false
+## A ToonEffect preset that replaces the texture (set before add_child).
+var effect: String = ""
+var _toon: ToonEffect = null
 
 @onready var _sprite: Sprite2D = $Sprite2D
 
@@ -45,6 +49,12 @@ func configure(shooter: Node, facing: float, damage: float, knockback: float,
 
 func _ready() -> void:
 	add_to_group("ground_hazards")
+	if ToonEffect.has_preset(effect):
+		_toon = ToonEffect.new(effect, _art_height, _dir < 0.0)
+		add_child(_toon)
+		_sprite.visible = false
+		_toon.set_grow(0.0)
+		return
 	if _texture == null:
 		queue_free()
 		return
@@ -64,11 +74,18 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_elapsed += delta
+	if _toon != null:
+		_animate_toon()
 	if _elapsed < _delay:
 		var warning_progress := _elapsed / maxf(_delay, 0.001)
 		_set_warning_frame(warning_progress)
 	elif _elapsed < _delay + _active_time:
 		_set_active_frame()
+		if not _erupted:
+			_erupted = true
+			Fx.shake(0.4)
+			Fx.dust(global_position, 0.0, 7, 240.0)
+			Sfx.play("spike", -3.0)
 		_hit_overlapping_players()
 	elif _elapsed < _delay + _active_time + _fade_time:
 		var fade_progress := (_elapsed - _delay - _active_time) / maxf(_fade_time, 0.001)
@@ -78,6 +95,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _set_stage(stage: int) -> void:
+	if _toon != null:
+		return
 	_sprite.frame = mini(stage, _frame_count - 1)
 
 
@@ -102,6 +121,21 @@ func _set_fade_frame(progress: float) -> void:
 		_set_stage(3)
 
 
+## Warning: a low smoulder along the floor. Eruption: it shoots up to full
+## height almost at once. Then it dies down and fades.
+func _animate_toon() -> void:
+	if _elapsed < _delay:
+		var warn := _elapsed / maxf(_delay, 0.001)
+		_toon.set_grow(0.08 + 0.1 * warn)
+	elif _elapsed < _delay + _active_time:
+		var rise := (_elapsed - _delay) / 0.07
+		_toon.set_grow(1.0 - pow(1.0 - clampf(rise, 0.0, 1.0), 3.0))
+	else:
+		var out := (_elapsed - _delay - _active_time) / maxf(_fade_time, 0.001)
+		_toon.set_grow(1.0 - 0.4 * clampf(out, 0.0, 1.0))
+		_toon.set_fade(1.0 - clampf(out, 0.0, 1.0))
+
+
 func _hit_overlapping_players() -> void:
 	var shape := RectangleShape2D.new()
 	shape.size = _hitbox_size
@@ -121,5 +155,7 @@ func _hit_overlapping_players() -> void:
 		var target_id := other.get_instance_id()
 		if _hit_targets.has(target_id):
 			continue
-		if other.take_hit(_damage, _knockback, _dir, _up_ratio):
+		# The caster may be gone by the time the spike erupts.
+		var caster: Node = _shooter if is_instance_valid(_shooter) else null
+		if other.take_hit(_damage, _knockback, _dir, _up_ratio, caster, false, ToonEffect.sound_kind(effect)):
 			_hit_targets[target_id] = true

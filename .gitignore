@@ -11,3 +11,9 @@
 # Launcher state / logs (per-machine, not part of the project)
 .skadoosh_version
 skadoosh-log.txt
+
+# Local project-setting overrides (used by test tooling; never committed)
+override.cfg
+
+# Python bytecode from the tools/ generators
+__pycache__/

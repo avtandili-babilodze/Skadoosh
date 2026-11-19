@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="MapData" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://data/map_data.gd" id="1_map"]
+[ext_resource type="Texture2D" path="res://assets/maps/neon/bg.jpg" id="2_bg"]
+[ext_resource type="Texture2D" path="res://assets/maps/neon/stage.png" id="3_stage"]
+[ext_resource type="Texture2D" path="res://assets/maps/neon/platform.png" id="4_platform"]
+
+[resource]
+script = ExtResource("1_map")
+id = "neon"
+map_name = "Neon Foundry"
+description = "A steel deck adrift above the clouds. One platform over the middle: the classic duel."
+background = ExtResource("2_bg")
+stage_texture = ExtResource("3_stage")
+platform_texture = ExtResource("4_platform")
+stage_art_line = Vector3(28, 1579, 0)
+platform_art_line = Vector3(0, 583, 0)
+accent = Color(1, 0.25, 0.78, 1)
+ambient = "motes"
+stage_width = 940.0
+platforms = Array[Vector3]([Vector3(0, -122, 300)])
+moving_platform = Vector3(0, 0, 0)
+moving_platform_travel = 0.0
+moving_platform_period = 8.0
+spawn_points = PackedVector2Array(-211, 0, 211, 0)
+blast_zone = Rect2(-1190, -920, 2380, 1540)

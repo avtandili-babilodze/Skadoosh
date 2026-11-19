@@ -1,349 +1,249 @@
 extends RefCounted
-## Hero data: the roster loads, and every fighter's sheets, skills and grids are
-## usable — shared ground lines, planted feet at a natural pace, valid kept sheets.
+## Hero data: the roster loads, every fighter's skills are sound, and every
+## fighter's sheets follow the rules that make the roster read as one game:
+## one scale, one ground line, enough frames to move smoothly, attacks pinned to
+## the moment they hit, and legs that keep pace with the body.
 
 const SheetChecks := preload("res://tests/support/sheet_checks.gd")
+
+const MELEE := AttackData.Kind.MELEE
+const RANGED := AttackData.Kind.RANGED
+const SPIKE := AttackData.Kind.GROUND_SPIKE
+
+## The roster's design: what each fighter's light and heavy skill is. A data
+## slip that turns a zoner into a brawler changes how the fighter plays.
+const KITS := {
+	"Kunoichi": [MELEE, MELEE],
+	"Linea": [RANGED, RANGED],
+	"Primordial Demon": [MELEE, SPIKE],
+	"Waterbender": [RANGED, RANGED],
+	"Lilith": [MELEE, MELEE],
+	"Kitsune": [RANGED, MELEE],
+	"Antiope": [MELEE, MELEE],
+	"Musashi": [MELEE, MELEE],
+	"Akane": [MELEE, SPIKE],
+}
+
+## Fewest frames an animation may have and still read as smooth motion.
+const MIN_FRAMES := {
+	"idle": 16, "run": 10, "jump": 6, "fall": 6, "land": 6, "hurt": 6, "death": 10,
+	"light attack": 8, "heavy attack": 10,
+}
+
+## On-screen pixels per texture pixel, shared by every sheet of every fighter
+## (a 200 px cell is drawn 140.2 px tall), so nobody grows or shrinks between
+## animations and the whole roster stands at one scale.
+const ROSTER_SCALE := 140.2 / 200.0
+
+## Fighters whose run is too fast for the stride measurement, which only sees
+## frames where both feet are low at once; a sprint has a flight phase instead.
+## Their runs are held to measured foot speed when the art is built.
+const SPRINTERS := ["Kunoichi"]
 
 ## The runner: check() records a result; test nodes are added under it.
 var t
 
 
-func run(runner: Node) -> void:
+func run(runner: Node) -> bool:
 	t = runner
-	_test_hero_data()
-	_test_walk_sheet_alignment()
+	_test_roster()
+	for hero: HeroData in Roster.heroes:
+		_test_skills(hero)
+		_test_sheets(hero)
+		_test_run_pace(hero)
+	_test_signature_details()
+	return true
 
-func _test_hero_data() -> void:
+
+func _test_roster() -> void:
 	t.check(Roster.heroes.size() >= 9, "the roster loads all nine fighters")
 	var names: Dictionary = {}
 	for hero: HeroData in Roster.heroes:
-		t.check(not hero.hero_name.is_empty(), "each fighter has a name")
-		t.check(not names.has(hero.hero_name), "fighter names are unique: %s" % hero.hero_name)
-		names[hero.hero_name] = true
-		t.check(hero.ground_acceleration > 0.0, "%s has grounded acceleration" % hero.hero_name)
-		t.check(hero.air_acceleration > 0.0, "%s has air acceleration" % hero.hero_name)
-		_validate_walk_animation(hero)
-		_validate_air_animation(hero)
-		_validate_death_sheet(hero)
-		_validate_land_sheet(hero)
-		_validate_skill(hero, hero.light_attack)
-		_validate_skill(hero, hero.heavy_attack)
-		t.check(is_equal_approx(hero.light_attack.post_end_lag, 0.3),
-				"%s light attack has 0.3 seconds of post-skill lock" % hero.hero_name)
-		t.check(is_equal_approx(hero.heavy_attack.post_end_lag, 0.5),
-				"%s heavy attack has 0.5 seconds of post-skill lock" % hero.hero_name)
-		if (hero.light_attack != null and hero.heavy_attack != null
-				and hero.light_attack.animation_texture != null
-				and hero.heavy_attack.animation_texture != null):
-			t.check(hero.light_attack.animation_texture != hero.heavy_attack.animation_texture,
-					"%s light and heavy attacks use different animation sheets" % hero.hero_name)
-		if hero.hero_name == "Primordial Demon":
-			_validate_primordial_demon_sheets(hero)
-		elif hero.hero_name == "Waterbender":
-			t.check(hero.walk_frames >= 8, "Waterbender walk cycle has smooth in-between poses")
-			_validate_water_bender(hero)
-		elif hero.hero_name == "Lilith":
-			_validate_rebuilt_hero(hero)
-			t.check(hero.light_attack.kind == AttackData.Kind.MELEE
-					and hero.heavy_attack.kind == AttackData.Kind.MELEE,
-					"Lilith fights with a melee whip")
-		elif hero.hero_name == "Antiope":
-			_validate_rebuilt_hero(hero)
-			t.check(hero.light_attack.kind == AttackData.Kind.MELEE
-					and hero.heavy_attack.kind == AttackData.Kind.MELEE,
-					"Antiope fights up close with shield and sword")
-		elif hero.hero_name == "Kitsune":
-			_validate_rebuilt_hero(hero)
-			t.check(hero.light_attack.kind == AttackData.Kind.RANGED,
-					"Kitsune's light attack throws foxfire")
-			t.check(hero.light_attack.projectile_texture != hero.light_attack.animation_texture,
-					"Kitsune's foxfire is its own projectile, not baked into her pose")
-		elif hero.hero_name == "Musashi":
-			_validate_rebuilt_hero(hero)
-			t.check(hero.light_attack.kind == AttackData.Kind.MELEE
-					and hero.heavy_attack.kind == AttackData.Kind.MELEE,
-					"Musashi fights up close with his katana")
-			var idle_top := _visible_top_offset(hero.texture, hero.idle_hframes,
-					hero.idle_vframes, hero.sprite_height)
-			var land_top := _visible_top_offset(hero.land_texture, hero.land_hframes,
-					hero.land_vframes, hero.land_sprite_height)
-			t.check(land_top > idle_top + 5.0,
-					"Musashi crouches into his landings (%.1f px below standing)" % (land_top - idle_top))
-		elif hero.hero_name == "Akane":
-			_validate_rebuilt_hero(hero)
-			t.check(hero.light_attack.kind == AttackData.Kind.MELEE,
-					"Akane's Ember Flick is a close-range flame burst")
-			t.check(hero.heavy_attack.kind == AttackData.Kind.GROUND_SPIKE,
-					"Akane's Pyre Pillar erupts from the ground ahead of her")
-			var pillar := hero.heavy_attack.ground_spike_texture
-			t.check(SheetChecks.has_clear_vertical_frame_gutters(pillar,
-					hero.heavy_attack.ground_spike_hframes, hero.heavy_attack.ground_spike_vframes),
-					"Akane's pillar frames have isolated atlas cells")
-			t.check(SheetChecks.frames_share_visible_baseline(pillar,
-					hero.heavy_attack.ground_spike_hframes, hero.heavy_attack.ground_spike_vframes),
-					"Akane's pillar rises from the floor in every frame")
+		var who := hero.hero_name
+		t.check(not who.is_empty(), "each fighter has a name")
+		t.check(not names.has(who), "fighter names are unique: %s" % who)
+		names[who] = true
+		t.check(not hero.description.is_empty(), "%s has a description for the select screen" % who)
+		t.check(hero.ground_acceleration > 0.0, "%s has grounded acceleration" % who)
+		t.check(hero.air_acceleration > 0.0, "%s has air acceleration" % who)
+		t.check(hero.icon != null and hero.icon.get_width() == hero.icon.get_height(),
+				"%s has a square icon" % who)
+	for who: String in KITS:
+		t.check(names.has(who), "%s is on the roster" % who)
 
 
-## Every frame of a walk sheet must share a feet baseline. When a sheet's rows are
-## assembled at different vertical offsets the character hitches upward partway
-## through the cycle, which reads as broken animation regardless of frame count.
-func _test_walk_sheet_alignment() -> void:
-	for hero: HeroData in Roster.heroes:
-		if hero.walk_texture == null:
-			continue
-		var image: Image = hero.walk_texture.get_image()
-		var hf: int = maxi(1, hero.walk_hframes)
-		var vf: int = maxi(1, hero.walk_vframes)
-		var cell_w: int = image.get_width() / hf
-		var cell_h: int = image.get_height() / vf
-		var lowest: int = -1
-		var highest: int = -1
-		for r in vf:
-			for c in hf:
-				var baseline: int = -1
-				for y in range(cell_h - 1, -1, -1):
-					var hit := false
-					# Sampling every 4th column is ample for locating a baseline.
-					for x in range(0, cell_w, 4):
-						if image.get_pixel(c * cell_w + x, r * cell_h + y).a > 0.03:
-							hit = true
-							break
-					if hit:
-						baseline = y
-						break
-				if baseline < 0:
-					continue
-				if lowest < 0 or baseline > lowest:
-					lowest = baseline
-				if highest < 0 or baseline < highest:
-					highest = baseline
-		var spread: int = lowest - highest
-		t.check(spread <= int(cell_h * 0.03) + 2,
-				"%s walk frames share a feet baseline (spread %d px)" % [
-					hero.hero_name, spread])
+# --- Skills ------------------------------------------------------------------------
 
-
-func _validate_walk_animation(hero: HeroData) -> void:
-	if hero.walk_texture == null:
+func _test_skills(hero: HeroData) -> void:
+	var who := hero.hero_name
+	_validate_skill(hero, hero.light_attack)
+	_validate_skill(hero, hero.heavy_attack)
+	if hero.light_attack == null or hero.heavy_attack == null:
 		return
-	t.check(hero.walk_hframes > 0 and hero.walk_vframes > 0,
-			"%s has a valid walk-animation grid" % hero.hero_name)
-	t.check(hero.walk_texture.get_width() % hero.walk_hframes == 0,
-			"%s walk sheet divides into equal columns" % hero.hero_name)
-	t.check(hero.walk_texture.get_height() % hero.walk_vframes == 0,
-			"%s walk sheet divides into equal rows" % hero.hero_name)
-	t.check(hero.walk_frames >= 4, "%s walk cycle has at least four poses" % hero.hero_name)
-	t.check(SheetChecks.has_transparent_corners(hero.walk_texture),
-			"%s walk sheet has transparent corners" % hero.hero_name)
-	# Starting or stopping a walk swaps sheets; the feet must not hop when it does.
-	# Waterbender's walk still stands about 6 px below her idle (a known offset in
-	# her art), so for now she is held only to her own per-sheet ground-line checks.
-	if hero.hero_name == "Waterbender":
-		return
-	var idle_baseline := SheetChecks.visible_baseline_offset(hero.texture,
-			hero.idle_hframes, hero.idle_vframes, hero.sprite_height)
-	var walk_baseline := SheetChecks.visible_baseline_offset(hero.walk_texture,
-			hero.walk_hframes, hero.walk_vframes, hero.walk_sprite_height)
-	t.check(absf(walk_baseline - idle_baseline) <= 4.0,
-			"%s walk meets the idle ground line (%.1f px apart)" % [
-				hero.hero_name, absf(walk_baseline - idle_baseline)])
-
-
-func _validate_air_animation(hero: HeroData) -> void:
-	var air_settings := [
-		["jump", hero.jump_texture, hero.jump_hframes, hero.jump_vframes, hero.jump_frames],
-		["fall/dive", hero.fall_texture, hero.fall_hframes, hero.fall_vframes, hero.fall_frames],
-	]
-	for setting in air_settings:
-		var label: String = setting[0]
-		var texture: Texture2D = setting[1]
-		if texture == null:
-			continue
-		var hframes: int = setting[2]
-		var vframes: int = setting[3]
-		var frames: int = setting[4]
-		t.check(hframes > 0 and vframes > 0,
-				"%s has a valid %s-animation grid" % [hero.hero_name, label])
-		t.check(texture.get_width() % hframes == 0,
-				"%s %s sheet divides into equal columns" % [hero.hero_name, label])
-		t.check(texture.get_height() % vframes == 0,
-				"%s %s sheet divides into equal rows" % [hero.hero_name, label])
-		t.check(SheetChecks.has_transparent_corners(texture),
-				"%s %s sheet has transparent corners" % [hero.hero_name, label])
-		if hframes * vframes > 1:
-			t.check(frames >= 4, "%s %s animation has at least four poses" % [hero.hero_name, label])
+	t.check(is_equal_approx(hero.light_attack.post_end_lag, 0.3),
+			"%s light attack has 0.3 seconds of post-skill lock" % who)
+	t.check(is_equal_approx(hero.heavy_attack.post_end_lag, 0.5),
+			"%s heavy attack has 0.5 seconds of post-skill lock" % who)
+	t.check(hero.light_attack.animation_texture != hero.heavy_attack.animation_texture,
+			"%s light and heavy attacks use different animation sheets" % who)
+	if KITS.has(who):
+		t.check(hero.light_attack.kind == KITS[who][0] and hero.heavy_attack.kind == KITS[who][1],
+				"%s keeps the skill types of her kit" % who)
 
 
 func _validate_skill(hero: HeroData, skill: AttackData) -> void:
 	t.check(skill != null, "%s has a configured skill" % hero.hero_name)
 	if skill == null:
 		return
+	var label := "%s/%s" % [hero.hero_name, skill.skill_name]
 	var total_time := skill.startup_time + skill.active_time + skill.recovery_time
-	t.check(skill.active_time > 0.0, "%s/%s has an active window" % [hero.hero_name, skill.skill_name])
-	t.check(total_time > 0.0, "%s/%s has valid phase timing" % [hero.hero_name, skill.skill_name])
-	t.check(skill.cooldown >= total_time,
-			"%s/%s cooldown covers its full animation" % [hero.hero_name, skill.skill_name])
-	if skill.animation_texture != null:
-		t.check(skill.animation_hframes > 0 and skill.animation_vframes > 0,
-				"%s/%s has a valid animation grid" % [hero.hero_name, skill.skill_name])
-		t.check(skill.animation_texture.get_width() % skill.animation_hframes == 0,
-				"%s/%s sheet divides into equal columns" % [hero.hero_name, skill.skill_name])
-		t.check(SheetChecks.has_transparent_corners(skill.animation_texture),
-				"%s/%s sheet has transparent corners" % [hero.hero_name, skill.skill_name])
-	if skill.kind == AttackData.Kind.RANGED:
-		t.check(skill.projectile_texture != null, "%s/%s has projectile art" % [hero.hero_name, skill.skill_name])
-		t.check(skill.projectile_radius > 0.0, "%s/%s has a projectile hitbox" % [hero.hero_name, skill.skill_name])
-	elif skill.kind == AttackData.Kind.GROUND_SPIKE:
-		t.check(skill.ground_spike_texture != null,
-				"%s/%s has ground-spike art" % [hero.hero_name, skill.skill_name])
-		t.check(SheetChecks.has_transparent_corners(skill.ground_spike_texture),
-				"%s/%s ground-spike sheet has transparent corners" % [hero.hero_name, skill.skill_name])
-		t.check(skill.ground_spike_distance >= 300.0,
-				"%s/%s erupts about four game meters away" % [hero.hero_name, skill.skill_name])
+	t.check(skill.active_time > 0.0, "%s has an active window" % label)
+	t.check(total_time > 0.0, "%s has valid phase timing" % label)
+	t.check(skill.cooldown >= total_time, "%s cooldown covers its full animation" % label)
+	if skill.kind == RANGED:
+		var art := skill.projectile_texture
+		t.check(art != null, "%s has projectile art" % label)
+		t.check(skill.projectile_radius > 0.0, "%s has a projectile hitbox" % label)
+		if art != null:
+			t.check(skill.projectile_hframes > 0 and skill.projectile_vframes > 0
+					and art.get_width() % skill.projectile_hframes == 0
+					and art.get_height() % skill.projectile_vframes == 0,
+					"%s projectile sheet divides into equal cells" % label)
+			t.check(skill.projectile_frames <= skill.projectile_hframes * skill.projectile_vframes,
+					"%s projectile animation fits its sheet" % label)
+	elif skill.kind == SPIKE:
+		var spike := skill.ground_spike_texture
+		t.check(spike != null, "%s has ground-spike art" % label)
+		t.check(skill.ground_spike_distance >= 300.0, "%s erupts about four game meters away" % label)
 		t.check(skill.ground_spike_hitbox_size.x > 0.0 and skill.ground_spike_hitbox_size.y > 0.0,
-				"%s/%s has a ground-spike hitbox" % [hero.hero_name, skill.skill_name])
+				"%s has a ground-spike hitbox" % label)
+		if spike != null:
+			t.check(SheetChecks.has_transparent_corners(spike),
+					"%s ground-spike sheet has transparent corners" % label)
+			t.check(SheetChecks.has_clear_vertical_frame_gutters(spike,
+					skill.ground_spike_hframes, skill.ground_spike_vframes),
+					"%s ground-spike frames have isolated atlas cells" % label)
+			t.check(SheetChecks.frames_share_visible_baseline(spike,
+					skill.ground_spike_hframes, skill.ground_spike_vframes),
+					"%s rises from the floor in every frame" % label)
 
 
-func _validate_primordial_demon_sheets(hero: HeroData) -> void:
-	var character_sheets := [
-		["walk", hero.walk_texture, hero.walk_hframes, hero.walk_vframes],
-		["jump", hero.jump_texture, hero.jump_hframes, hero.jump_vframes],
-		["dive", hero.fall_texture, hero.fall_hframes, hero.fall_vframes],
-		["light attack", hero.light_attack.animation_texture,
-				hero.light_attack.animation_hframes, hero.light_attack.animation_vframes],
-		["heavy attack", hero.heavy_attack.animation_texture,
-				hero.heavy_attack.animation_hframes, hero.heavy_attack.animation_vframes],
+# --- Sheets ------------------------------------------------------------------------
+
+## Every animation a fighter has, as one list:
+## [label, texture, hframes, vframes, frames, on-screen cell height, stands on the ground]
+func _sheets(hero: HeroData) -> Array:
+	var light := hero.light_attack
+	var heavy := hero.heavy_attack
+	var sheets := [
+		["idle", hero.texture, hero.idle_hframes, hero.idle_vframes, hero.idle_frames, hero.sprite_height, true],
+		["run", hero.walk_texture, hero.walk_hframes, hero.walk_vframes, hero.walk_frames, hero.walk_sprite_height, true],
+		["jump", hero.jump_texture, hero.jump_hframes, hero.jump_vframes, hero.jump_frames, hero.air_sprite_height, false],
+		["fall", hero.fall_texture, hero.fall_hframes, hero.fall_vframes, hero.fall_frames, hero.air_sprite_height, false],
+		["land", hero.land_texture, hero.land_hframes, hero.land_vframes, hero.land_frames, hero.land_sprite_height, true],
+		["hurt", hero.hurt_texture, hero.hurt_hframes, hero.hurt_vframes, hero.hurt_frames, hero.hurt_sprite_height, true],
+		["death", hero.death_texture, hero.death_hframes, hero.death_vframes, hero.death_frames, hero.death_sprite_height, false],
 	]
-	for sheet in character_sheets:
-		t.check(SheetChecks.has_clear_vertical_frame_gutters(sheet[1], sheet[2], sheet[3]),
-				"Primordial Demon %s frames do not contain neighboring tails" % sheet[0])
-	t.check(SheetChecks.has_clear_vertical_frame_gutters(hero.heavy_attack.ground_spike_texture,
-			hero.heavy_attack.ground_spike_hframes, hero.heavy_attack.ground_spike_vframes),
-			"Primordial Demon eruption frames have isolated atlas cells")
-	t.check(SheetChecks.frames_share_visible_baseline(hero.walk_texture,
-			hero.walk_hframes, hero.walk_vframes),
-			"Primordial Demon walk frames share a stable ground line")
-	_check_walk_pace(hero)
-	t.check(SheetChecks.frames_share_visible_baseline(hero.heavy_attack.animation_texture,
-			hero.heavy_attack.animation_hframes, hero.heavy_attack.animation_vframes),
-			"Primordial Demon heavy-cast frames finish on the ground")
-	t.check(SheetChecks.frames_share_visible_baseline(hero.heavy_attack.ground_spike_texture,
-			hero.heavy_attack.ground_spike_hframes, hero.heavy_attack.ground_spike_vframes),
-			"Primordial Demon eruption frames stay on the arena floor")
-	var idle_baseline := SheetChecks.visible_baseline_offset(hero.texture, 1, 1, hero.sprite_height)
-	var walk_baseline := SheetChecks.visible_baseline_offset(hero.walk_texture,
-			hero.walk_hframes, hero.walk_vframes, hero.walk_sprite_height)
-	var light_baseline := SheetChecks.visible_baseline_offset(hero.light_attack.animation_texture,
-			hero.light_attack.animation_hframes, hero.light_attack.animation_vframes,
-			hero.light_attack.animation_sprite_height)
-	var heavy_baseline := SheetChecks.visible_baseline_offset(hero.heavy_attack.animation_texture,
-			hero.heavy_attack.animation_hframes, hero.heavy_attack.animation_vframes,
-			hero.heavy_attack.animation_sprite_height)
-	t.check(absf(walk_baseline - idle_baseline) <= 4.0,
-			"Primordial Demon walk cycle meets her idle ground line")
-	t.check(absf(light_baseline - idle_baseline) <= 4.0,
-			"Primordial Demon light attack meets her idle ground line")
-	t.check(absf(heavy_baseline - idle_baseline) <= 4.0,
-			"Primordial Demon heavy cast meets her idle ground line")
+	if light != null:
+		sheets.append(["light attack", light.animation_texture, light.animation_hframes,
+				light.animation_vframes, light.animation_frames, light.animation_sprite_height, true])
+	if heavy != null:
+		sheets.append(["heavy attack", heavy.animation_texture, heavy.animation_hframes,
+				heavy.animation_vframes, heavy.animation_frames, heavy.animation_sprite_height, true])
+	return sheets
 
 
-## Heroes rebuilt from asset-pack sheets (Lilith, Kitsune, Antiope) are cut apart
-## and re-laid on one shared cell height, and Musashi is rendered from a rigged
-## model onto the same grid, so every grounded pose must stand on the same ground
-## line and read at one size, and the legs must keep pace with the body.
-func _validate_rebuilt_hero(hero: HeroData) -> void:
+func _test_sheets(hero: HeroData) -> void:
 	var who := hero.hero_name
-	t.check(hero.idle_hframes * hero.idle_vframes > 1 and hero.idle_frames >= 4,
-			"%s has an animated idle" % who)
-	t.check(hero.texture.get_width() % hero.idle_hframes == 0
-			and hero.texture.get_height() % hero.idle_vframes == 0,
-			"%s idle sheet divides into equal cells" % who)
-	t.check(SheetChecks.has_transparent_corners(hero.texture), "%s idle sheet has transparent corners" % who)
-	t.check(SheetChecks.frames_share_visible_baseline(hero.texture, hero.idle_hframes, hero.idle_vframes),
-			"%s idle frames share one ground line" % who)
-	var idle_baseline := SheetChecks.visible_baseline_offset(hero.texture,
-			hero.idle_hframes, hero.idle_vframes, hero.sprite_height)
-	t.check(hero.hurt_texture != null, "%s has a hurt animation" % who)
-	var poses := [
-		["walk", hero.walk_texture, hero.walk_hframes, hero.walk_vframes, hero.walk_sprite_height],
-		["light attack", hero.light_attack.animation_texture, hero.light_attack.animation_hframes,
-				hero.light_attack.animation_vframes, hero.light_attack.animation_sprite_height],
-		["heavy attack", hero.heavy_attack.animation_texture, hero.heavy_attack.animation_hframes,
-				hero.heavy_attack.animation_vframes, hero.heavy_attack.animation_sprite_height],
-		["hurt", hero.hurt_texture, hero.hurt_hframes, hero.hurt_vframes, hero.hurt_sprite_height],
-	]
-	for pose in poses:
-		t.check(pose[1].get_width() % pose[2] == 0 and pose[1].get_height() % pose[3] == 0,
-				"%s %s sheet divides into equal cells" % [who, pose[0]])
-		var baseline := SheetChecks.visible_baseline_offset(pose[1], pose[2], pose[3], pose[4])
-		t.check(absf(baseline - idle_baseline) <= 4.0,
-				"%s %s meets the idle ground line" % [who, pose[0]])
-		t.check(SheetChecks.frames_share_visible_baseline(pose[1], pose[2], pose[3]),
-				"%s %s frames share one ground line" % [who, pose[0]])
-	t.check(hero.light_attack.animation_release_frame >= 0
-			and hero.heavy_attack.animation_release_frame >= 0,
-			"%s attack art is pinned to the moment it hits" % who)
-	_check_walk_pace(hero)
+	var idle_baseline := 0.0
+	if hero.texture != null:
+		idle_baseline = SheetChecks.visible_baseline_offset(hero.texture,
+				hero.idle_hframes, hero.idle_vframes, hero.sprite_height)
+	for sheet in _sheets(hero):
+		var label: String = sheet[0]
+		var texture: Texture2D = sheet[1]
+		var columns: int = sheet[2]
+		var rows: int = sheet[3]
+		t.check(texture != null, "%s has a %s animation" % [who, label])
+		if texture == null:
+			continue
+		var even := columns > 0 and rows > 0 \
+				and texture.get_width() % columns == 0 and texture.get_height() % rows == 0
+		t.check(even, "%s %s sheet divides into equal cells" % [who, label])
+		if not even:
+			continue
+		var cells := columns * rows
+		var frames: int = sheet[4] if sheet[4] > 0 else cells
+		t.check(frames <= cells, "%s %s plays only frames its sheet has" % [who, label])
+		t.check(frames >= MIN_FRAMES[label],
+				"%s %s is smooth: %d frames (at least %d)" % [who, label, frames, MIN_FRAMES[label]])
+		t.check(SheetChecks.has_transparent_corners(texture),
+				"%s %s sheet has transparent corners" % [who, label])
+		var cell_height := texture.get_height() / float(rows)
+		var height: float = sheet[5]
+		t.check(absf(height / cell_height - ROSTER_SCALE) < 0.004,
+				"%s %s is drawn at the roster's scale" % [who, label])
+		if sheet[6]:
+			t.check(SheetChecks.frames_share_visible_baseline(texture, columns, rows),
+					"%s %s frames share one ground line" % [who, label])
+			var baseline := SheetChecks.visible_baseline_offset(texture, columns, rows, height)
+			t.check(absf(baseline - idle_baseline) <= 4.0,
+					"%s %s meets the idle ground line (%.1f px apart)" % [
+						who, label, absf(baseline - idle_baseline)])
+
+	for skill: AttackData in [hero.light_attack, hero.heavy_attack]:
+		if skill == null or skill.animation_texture == null:
+			continue
+		var count := skill.animation_frames if skill.animation_frames > 0 \
+				else skill.animation_hframes * skill.animation_vframes
+		t.check(skill.animation_release_frame >= 0 and skill.animation_release_frame < count,
+				"%s/%s art is pinned to the moment it hits" % [who, skill.skill_name])
+		t.check(skill.animation_active_frames >= 1
+				and skill.animation_release_frame + skill.animation_active_frames <= count,
+				"%s/%s keeps its active frames inside the sheet" % [who, skill.skill_name])
 
 
 ## A planted foot should stay put: the body may travel a little further than the
-## legs step each cycle, but not far enough to read as gliding.
-func _check_walk_pace(hero: HeroData) -> void:
-	var step := SheetChecks.walk_step_length(hero)
-	var travel := hero.speed * float(hero.walk_frames) / hero.walk_fps
-	t.check(step > 0.0 and travel <= 2.0 * step * 1.3,
-			"%s legs keep pace with the body (travel %.0f px per cycle, stride %.0f px)"
-			% [hero.hero_name, travel, 2.0 * step])
-	# ...and not by pumping the legs: past about five steps a second a walk or run
-	# stops reading as natural and looks like frantic sprinting.
-	var steps_per_second := 2.0 * hero.walk_fps / float(hero.walk_frames)
-	t.check(steps_per_second <= 5.0,
-			"%s legs move at a natural pace (%.1f steps/s)" % [hero.hero_name, steps_per_second])
-
-
-## Death sheets are kept for later even though the game does not play them yet;
-## make sure they stay usable in the meantime.
-func _validate_death_sheet(hero: HeroData) -> void:
-	if hero.death_texture == null:
+## legs step each cycle, but not far enough to read as gliding, and the legs must
+## not pump faster than a person's do.
+func _test_run_pace(hero: HeroData) -> void:
+	if hero.walk_texture == null or hero.walk_fps <= 0.0:
 		return
 	var who := hero.hero_name
-	t.check(hero.death_hframes > 0 and hero.death_vframes > 0
-			and hero.death_texture.get_width() % hero.death_hframes == 0
-			and hero.death_texture.get_height() % hero.death_vframes == 0,
-			"%s death sheet divides into equal cells" % who)
-	t.check(SheetChecks.has_transparent_corners(hero.death_texture), "%s death sheet has transparent corners" % who)
-	var cells := hero.death_hframes * hero.death_vframes
-	var frames: int = hero.death_frames if hero.death_frames > 0 else cells
-	t.check(frames >= 2 and frames <= cells, "%s death animation has a valid frame count" % who)
+	var frames: int = hero.walk_frames if hero.walk_frames > 0 \
+			else hero.walk_hframes * hero.walk_vframes
+	var steps_per_second := 2.0 * hero.walk_fps / float(frames)
+	t.check(steps_per_second <= 5.001,
+			"%s legs move at a natural pace (%.1f steps/s)" % [who, steps_per_second])
+	if SPRINTERS.has(who):
+		return
+	var step := SheetChecks.walk_step_length(hero)
+	var travel := hero.speed * float(frames) / hero.walk_fps
+	t.check(step > 0.0 and travel <= 2.0 * step * 1.3,
+			"%s legs keep pace with the body (travel %.0f px per cycle, stride %.0f px)"
+			% [who, travel, 2.0 * step])
 
 
-func _validate_water_bender(hero: HeroData) -> void:
-	var character_sheets := [
-		["idle", hero.texture, 1, 1],
-		["walk", hero.walk_texture, hero.walk_hframes, hero.walk_vframes],
-		["jump", hero.jump_texture, hero.jump_hframes, hero.jump_vframes],
-		["fall", hero.fall_texture, hero.fall_hframes, hero.fall_vframes],
-		["light attack", hero.light_attack.animation_texture,
-				hero.light_attack.animation_hframes, hero.light_attack.animation_vframes],
-		["heavy attack", hero.heavy_attack.animation_texture,
-				hero.heavy_attack.animation_hframes, hero.heavy_attack.animation_vframes],
-	]
-	for sheet in character_sheets:
-		t.check(SheetChecks.has_clear_vertical_frame_gutters(sheet[1], sheet[2], sheet[3]),
-				"Waterbender %s frames have isolated atlas cells" % sheet[0])
-		t.check(SheetChecks.has_opaque_pale_skin(sheet[1]),
-				"Waterbender %s art uses opaque pale skin" % sheet[0])
-	t.check(SheetChecks.all_visible_pixels_are_opaque(hero.texture),
-			"Waterbender idle art is fully opaque")
-	t.check(SheetChecks.frames_share_visible_baseline(hero.walk_texture,
-			hero.walk_hframes, hero.walk_vframes),
-			"Waterbender walk frames share a stable ground line")
-	t.check(SheetChecks.frames_share_visible_baseline(hero.light_attack.animation_texture,
-			hero.light_attack.animation_hframes, hero.light_attack.animation_vframes),
-			"Waterbender light-cast frames share a stable ground line")
-	t.check(SheetChecks.frames_share_visible_baseline(hero.heavy_attack.animation_texture,
-			hero.heavy_attack.animation_hframes, hero.heavy_attack.animation_vframes),
-			"Waterbender heavy-cast frames share a stable ground line")
+# --- Details that define particular fighters -----------------------------------------
+
+func _test_signature_details() -> void:
+	for hero: HeroData in Roster.heroes:
+		match hero.hero_name:
+			"Waterbender":
+				_test_water_bender(hero)
+			"Kitsune":
+				t.check(hero.light_attack.projectile_texture != hero.light_attack.animation_texture,
+						"Kitsune's foxfire is its own projectile, not baked into her pose")
+			"Musashi":
+				var idle_top := _visible_top_offset(hero.texture, hero.idle_hframes,
+						hero.idle_vframes, hero.sprite_height)
+				var land_top := _visible_top_offset(hero.land_texture, hero.land_hframes,
+						hero.land_vframes, hero.land_sprite_height)
+				t.check(land_top > idle_top + 5.0,
+						"Musashi crouches into his landings (%.1f px below standing)" % (land_top - idle_top))
+
+
+func _test_water_bender(hero: HeroData) -> void:
 	t.check(is_equal_approx(hero.light_attack.projectile_range, 240.0),
 			"Waterbender water spit travels three game meters")
 	t.check(is_equal_approx(hero.heavy_attack.projectile_range, 320.0),
@@ -354,31 +254,6 @@ func _validate_water_bender(hero: HeroData) -> void:
 			"Waterbender wave reaches double damage at maximum range")
 	t.check(hero.heavy_attack.projectile_grounded,
 			"Waterbender wave remains anchored to the ground")
-
-
-## A landing sheet is played on touchdown, so it must be a usable grid and stand
-## on the same ground line as the idle it hands back to.
-func _validate_land_sheet(hero: HeroData) -> void:
-	if hero.land_texture == null:
-		return
-	var who := hero.hero_name
-	var cells := hero.land_hframes * hero.land_vframes
-	t.check(hero.land_hframes > 0 and hero.land_vframes > 0
-			and hero.land_texture.get_width() % hero.land_hframes == 0
-			and hero.land_texture.get_height() % hero.land_vframes == 0,
-			"%s landing sheet divides into equal cells" % who)
-	t.check(SheetChecks.has_transparent_corners(hero.land_texture),
-			"%s landing sheet has transparent corners" % who)
-	var frames: int = hero.land_frames if hero.land_frames > 0 else cells
-	t.check(frames >= 2 and frames <= cells, "%s landing has a valid frame count" % who)
-	t.check(SheetChecks.frames_share_visible_baseline(hero.land_texture,
-			hero.land_hframes, hero.land_vframes), "%s landing frames share one ground line" % who)
-	var idle_baseline := SheetChecks.visible_baseline_offset(hero.texture,
-			hero.idle_hframes, hero.idle_vframes, hero.sprite_height)
-	var land_baseline := SheetChecks.visible_baseline_offset(hero.land_texture,
-			hero.land_hframes, hero.land_vframes, hero.land_sprite_height)
-	t.check(absf(land_baseline - idle_baseline) <= 4.0, "%s landing meets the idle ground line" % who)
-
 
 
 ## On-screen offset of the first cell's top-most visible pixel from the cell

@@ -11,6 +11,8 @@ const SUITES := [
 	"res://tests/suites/animation_suite.gd",
 	"res://tests/suites/combat_suite.gd",
 	"res://tests/suites/scene_suite.gd",
+	"res://tests/suites/cpu_suite.gd",
+	"res://tests/suites/rig_suite.gd",
 ]
 
 var _failures: int = 0
@@ -36,7 +38,10 @@ func _run() -> void:
 		if suite == null or not suite.can_instantiate():
 			check(false, "%s compiles" % path.get_file())
 			continue
-		await suite.new().run(self)
+		# A script error inside a suite ends its coroutine early without a value, so
+		# only a suite that reaches its last line counts as having run.
+		var finished = await suite.new().run(self)
+		check(finished == true, "%s ran to completion" % path.get_file())
 	if _failures == 0:
 		print("All Skadoosh tests passed.")
 	else:

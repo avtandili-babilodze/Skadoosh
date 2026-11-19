@@ -1,0 +1,66 @@
+{
+ "neon": {
+  "platform": {
+   "width": 583,
+   "height": 122,
+   "top": 0,
+   "flat_left": 0,
+   "flat_right": 583
+  },
+  "stage": {
+   "width": 1606,
+   "height": 378,
+   "top": 0,
+   "flat_left": 28,
+   "flat_right": 1579
+  }
+ },
+ "shrine": {
+  "platform": {
+   "width": 524,
+   "height": 141,
+   "top": 0,
+   "flat_left": 22,
+   "flat_right": 501
+  },
+  "stage": {
+   "width": 1602,
+   "height": 396,
+   "top": 1,
+   "flat_left": 51,
+   "flat_right": 1552
+  }
+ },
+ "caldera": {
+  "platform": {
+   "width": 584,
+   "height": 189,
+   "top": 1,
+   "flat_left": 1,
+   "flat_right": 583
+  },
+  "stage": {
+   "width": 1622,
+   "height": 396,
+   "top": 1,
+   "flat_left": 18,
+   "flat_right": 1596
+  }
+ },
+ "frost": {
+  "platform": {
+   "width": 656,
+   "height": 148,
+   "top": 0,
+   "flat_left": 4,
+   "flat_right": 653
+  },
+  "stage": {
+   "width": 1616,
+   "height": 427,
+   "top": 1,
+   "flat_left": 5,
+   "flat_right": 1610
+  }
+ }
+}

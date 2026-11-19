@@ -46,6 +46,10 @@ extends Resource
 ## Minimum time between ANY two attacks (light or heavy). Stops firing both at once.
 @export var min_attack_interval: float = 0.0
 
+## What the hero's melee attacks sound like: "blade", "claw", "whip", or ""
+## for a plain swing (fists, staffs, casters).
+@export var weapon_sound: String = ""
+
 @export_group("Skills")
 ## The quick, weaker attack (bound to the secondary attack key).
 @export var light_attack: AttackData
@@ -92,6 +96,13 @@ extends Resource
 @export var walk_sprite_height: float = 130.0
 ## Set FALSE if the walk art is drawn facing left.
 @export var walk_faces_right: bool = true
+
+@export_group("Rig")
+## A live cutout skeleton (rig.json from the art pipeline, with its part textures
+## beside it). When set, the fighter is drawn by it and every sheet below is
+## ignored: animations play at the display's frame rate and hair and cloth are
+## simulated live.
+@export var rig: JSON
 
 @export_group("Appearance")
 ## Icon shown for this hero on the character-select screen. Square art works best.
