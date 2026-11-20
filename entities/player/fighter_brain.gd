@@ -11,11 +11,12 @@ extends FighterInput
 enum Level { EASY, NORMAL, HARD }
 
 ## Seconds between decisions, chance to attack when a skill would reach, chance
-## to dodge a rival's attack up close, and how often it chooses the heavy skill.
+## to dodge a rival's attack up close, how often it chooses the heavy skill, and
+## chance to follow a landed hit with a combo.
 const PROFILES := [
-	{"think": 0.30, "attack": 0.40, "dodge": 0.05, "heavy": 0.25},
-	{"think": 0.17, "attack": 0.72, "dodge": 0.28, "heavy": 0.40},
-	{"think": 0.09, "attack": 0.95, "dodge": 0.60, "heavy": 0.50},
+	{"think": 0.30, "attack": 0.40, "dodge": 0.05, "heavy": 0.25, "combo": 0.15},
+	{"think": 0.17, "attack": 0.72, "dodge": 0.28, "heavy": 0.40, "combo": 0.50},
+	{"think": 0.09, "attack": 0.95, "dodge": 0.60, "heavy": 0.50, "combo": 0.90},
 ]
 ## Distance kept from a ledge while chasing, so it never runs off the stage.
 const LEDGE_MARGIN := 44.0
@@ -28,6 +29,8 @@ var _jump_wait: float = 0.0
 ## The skill it is currently positioning for, and how long it sticks with it.
 var _plan_heavy: bool = false
 var _plan_left: float = 0.0
+## True once it has decided what to do about the hit it just landed.
+var _combo_decided: bool = false
 
 
 func _init(cpu_level: int = Level.NORMAL, map: MapData = null) -> void:
@@ -39,8 +42,11 @@ func _init(cpu_level: int = Level.NORMAL, map: MapData = null) -> void:
 func poll(fighter: Fighter, delta: float) -> void:
 	pressed = {}          # presses last exactly one tick
 	down = false
+	heavy_held = fighter.is_diving()      # a dive is held until it arrives
 	_jump_wait = maxf(0.0, _jump_wait - delta)
 	if _recover(fighter):
+		return
+	if _follow_up(fighter):
 		return
 	_think_left -= delta
 	_plan_left -= delta
@@ -91,6 +97,39 @@ func _recover(fighter: Fighter) -> bool:
 	return true
 
 
+## A hit that lands can be cut short into the next action, the way a person
+## combos: the other skill if it would still reach the rival where the hit is
+## sending them, otherwise a dash after them. Decided once per landed hit.
+func _follow_up(fighter: Fighter) -> bool:
+	if not fighter.can_cancel():
+		_combo_decided = false
+		return false
+	if _combo_decided:
+		return false
+	_combo_decided = true
+	var rival := _find_rival(fighter)
+	if rival == null or randf() >= PROFILES[level].combo:
+		return false
+	var at := fighter.global_position
+	var to := rival.global_position - at
+	var toward := signf(to.x) if to.x != 0.0 else fighter.get_facing()
+	var hero := fighter.hero
+	var grounded := fighter.is_on_floor()
+	for heavy: bool in [true, false]:
+		var skill := hero.heavy_attack if heavy else hero.light_attack
+		if skill == null or (heavy and not grounded):
+			continue
+		# Aim at where the rival will be when the skill comes out.
+		if _strike(fighter, heavy, to + rival.velocity * skill.startup_time, toward):
+			return true
+	# Nothing reaches: chase with a dash, unless that would run off the stage.
+	if grounded and absf(to.x) > 110.0 and absf(to.y) < 130.0 			and absf(at.x + toward * 150.0) < _stage_half - LEDGE_MARGIN:
+		axis = toward
+		pressed["dash"] = true
+		return true
+	return false
+
+
 func _decide(fighter: Fighter, rival: Fighter, profile: Dictionary) -> void:
 	var at := fighter.global_position
 	if rival == null:
@@ -120,21 +159,25 @@ func _decide(fighter: Fighter, rival: Fighter, profile: Dictionary) -> void:
 		pressed["dash"] = true
 		return
 
+	# In the air right above the rival, and over the stage: plunge onto it.
+	if not grounded and fighter.is_free() and to.y > 70.0 and absf(to.x) < 44.0 \
+			and absf(at.x) < _stage_half - LEDGE_MARGIN and randf() < profile.attack \
+			and fighter.can_use(hero.attack_for(true, HeroData.Aim.DIVE), true):
+		axis = 0.0
+		down = true
+		heavy_held = true
+		pressed["attack"] = true
+		return
+
 	# Attack when a skill would connect.
 	if fighter.is_free() and randf() < profile.attack:
-		var heavy_ok := grounded and fighter.can_use(hero.heavy_attack, true) \
-				and _reaches(hero.heavy_attack, to)
-		var light_ok := fighter.can_use(hero.light_attack, false) and _reaches(hero.light_attack, to)
-		if heavy_ok and (not light_ok or randf() < profile.heavy):
-			fighter.face(toward)
-			axis = 0.0
-			pressed["attack"] = true
-			return
-		if light_ok:
-			fighter.face(toward)
-			axis = 0.0
-			pressed["attack2"] = true
-			return
+		var heavy_first: bool = randf() < profile.heavy
+		for heavy: bool in [heavy_first, not heavy_first]:
+			# In the air the heavy key is the rising heavy, kept for getting back.
+			if heavy and not grounded:
+				continue
+			if _strike(fighter, heavy, to, toward):
+				return
 
 	# Otherwise move to where the skill it is setting up would land. Sticking with
 	# one skill for a while stops it hovering between two ranges where neither reaches.
@@ -172,6 +215,26 @@ func _decide(fighter: Fighter, rival: Fighter, profile: Dictionary) -> void:
 
 
 ## Would this skill hit a rival at offset `to` if started now?
+## Presses an attack button aimed so that its skill connects with a rival at
+## `to`: a side held for the side attack, nothing for the one aimed upward, down
+## for the low one. With several that reach, any of them. False when none does.
+func _strike(fighter: Fighter, heavy: bool, to: Vector2, toward: float) -> bool:
+	var aims: Array = [HeroData.Aim.AIR]
+	if fighter.is_on_floor():
+		aims = [HeroData.Aim.SIDE, HeroData.Aim.UP, HeroData.Aim.DOWN]
+		aims.shuffle()
+	for aim: HeroData.Aim in aims:
+		var skill := fighter.hero.attack_for(heavy, aim)
+		if not fighter.can_use(skill, heavy) or not _reaches(skill, to):
+			continue
+		fighter.face(toward)
+		axis = toward if aim == HeroData.Aim.SIDE else 0.0
+		down = aim == HeroData.Aim.DOWN
+		pressed["attack" if heavy else "attack2"] = true
+		return true
+	return false
+
+
 func _reaches(skill: AttackData, to: Vector2) -> bool:
 	if skill == null:
 		return false
@@ -185,7 +248,8 @@ func _reaches(skill: AttackData, to: Vector2) -> bool:
 			return absf(gap - skill.ground_spike_distance) < skill.ground_spike_hitbox_size.x * 0.5 + 24.0 \
 					and absf(to.y) < skill.ground_spike_hitbox_size.y
 		_:
-			return gap < skill.reach + 14.0 and absf(to.y) < skill.height * 0.5 + 36.0
+			return gap < skill.reach + skill.hitbox_offset.x + 14.0 \
+					and absf(to.y - skill.hitbox_offset.y) < skill.height * 0.5 + 36.0
 
 
 ## The distance from the rival at which this skill connects best.

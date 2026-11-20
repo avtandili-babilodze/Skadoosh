@@ -63,6 +63,10 @@ var _part_hull: Array[PackedVector2Array] = []
 var _bone_hull: Dictionary = {}  # chain bone index -> outline points of its parts
 var _part_names: PackedStringArray = PackedStringArray()
 var _order_key: String = ""
+var _hidden_key: String = ""
+## The current animation's whole-body turn, in radians, and the bone it turns about.
+var _spin: float = 0.0
+var _spin_bone: int = -1
 var _texel: float = 3.0
 var _root_offset: Vector2 = Vector2.ZERO
 
@@ -150,6 +154,7 @@ func setup(rig_data: Dictionary, folder: String) -> void:
 				widest = maxf(widest, absf(along.cross(p)))
 			half.append(widest)
 		state["half"] = half
+	_spin_bone = _bone_index.get("pelvis", -1)
 	_apply_flip()
 	play(_first_animation())
 	_sample(0.0)
@@ -224,7 +229,7 @@ func bone_point(bone_name: String, point: Vector2) -> Vector2:
 	var i: int = _bone_index.get(bone_name, -1)
 	if i < 0:
 		return global_position
-	return to_global(_pos[i] + point.rotated(_theta[i]))
+	return to_global(_body.transform * (_pos[i] + point.rotated(_theta[i])))
 
 
 func has_point(point_name: String) -> bool:
@@ -306,7 +311,30 @@ func _sample(t: float) -> void:
 		_theta[i] = lerp_angle(float(values[i0]), float(values[i1]), u)
 	var root: Array = _anim["root"]
 	_root_offset = _vec(root[i0]).lerp(_vec(root[i1]), u)
+	var spin: Array = _anim.get("spin", [])
+	_spin = lerpf(float(spin[i0]), float(spin[i1]), u) if spin.size() > i1 else 0.0
 	_apply_order(i0)
+	_apply_hidden(i0)
+
+
+## Hides the parts the rig keeps out of sight (a blade that is in its scabbard),
+## or the set the animation names from this frame on.
+func _apply_hidden(frame: int) -> void:
+	var changes: Array = _anim.get("hidden", [])
+	var pick := -1
+	for c in changes.size():
+		if int(changes[c][0]) <= frame:
+			pick = c
+	var key := "%s:%d" % [_anim_name, pick]
+	if key == _hidden_key:
+		return
+	_hidden_key = key
+	var hidden: Array = changes[pick][1] if pick >= 0 else data.get("hidden", [])
+	var out := {}
+	for index in hidden:
+		out[int(index)] = true
+	for i in _parts.size():
+		_parts[i].visible = not out.has(i)
 
 
 func _apply_order(frame: int) -> void:
@@ -339,6 +367,11 @@ func _apply_parts() -> void:
 		var sprite := _parts[k]
 		sprite.position = _pos[b] + _part_offset[k].rotated(_theta[b])
 		sprite.rotation = _theta[b]
+	# An animation's spin turns the whole body about its hips (a flip, a spinning
+	# cut). The facing flip on this node mirrors it for a fighter facing left.
+	var pivot := _pos[_spin_bone] if _spin_bone >= 0 else Vector2.ZERO
+	_body.rotation = _spin
+	_body.position = pivot - pivot.rotated(_spin)
 
 
 func _apply_flip() -> void:

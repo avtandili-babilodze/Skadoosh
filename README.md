@@ -13,6 +13,11 @@ The easiest way — no install, no setup:
 2. Under **Assets**, click **`Skadoosh.exe`** to download it (~85 MB).
 3. **Double-click `Skadoosh.exe`** to play.
 
+The game opens fullscreen (`F11` switches to a window and back). The first time
+it runs it also puts a **Skadoosh** shortcut on your desktop, so keep
+`Skadoosh.exe` somewhere it can stay. Delete the shortcut and it will not come
+back; move the game and the shortcut follows it the next time you run the game.
+
 > If Windows shows a blue **"Windows protected your PC"** box, click
 > **More info → Run anyway**. This happens because the game isn't code-signed;
 > it's safe to run.
@@ -28,6 +33,9 @@ Download/clone this repo, then:
 
 The first launch downloads Godot 4.3 automatically into a local `.godot-bin/` folder
 (~70 MB, one time). After that it starts instantly. Nothing else to install.
+
+> **Desktop shortcut (Windows):** a source run only makes one when asked:
+> `godot --path . -- --desktop-shortcut`.
 
 > **Auto-update:** downloaded source releases check GitHub for a newer version before
 > starting. Git clones never auto-update, so local development work cannot be overwritten.
@@ -48,7 +56,7 @@ The first launch downloads Godot 4.3 automatically into a local `.godot-bin/` fo
 | Jump (again in the air to double) | `W`        | `↑`        | `A`                |
 | Fast-fall, drop through platforms | `S`        | `↓`        | down               |
 | Dash (with a direction) / dodge   | `Shift`    | `Ctrl`     | bumpers            |
-| Heavy attack (extra air jump)     | `F`        | `/`        | `B` / `Y`          |
+| Heavy attack (rises in the air)   | `F`        | `/`        | `B` / `Y`          |
 | Light attack                      | `G`        | `'`        | `X`                |
 
 `Esc` (or Start) pauses a match, `F11` toggles fullscreen and `7` toggles the
@@ -58,6 +66,33 @@ tapped at the end of another still comes out.
 
 Win by knocking the other fighter off the stage until they run out of stocks
 (three by default; change it under **Settings**).
+
+### How a fight flows
+
+- **A hit gives you the advantage.** Once an attack lands you can cut the rest
+  of it short with a jump, a dash or your other attack, while your rival is
+  still stunned. A light that lands leads into the heavy; a heavy that lands
+  lets you jump or dash after the fighter you just launched.
+- **A miss leaves you open.** Only an attack that hits nobody pays its end lag
+  (about 0.12 s for a light, 0.24 s for a heavy), and it cannot be cut short.
+- **Attacks are aimed.** Each attack button gives a different attack for where
+  you aim it: hold a side for the side attack, hold down for the low one, stand
+  still for the one aimed upward, and press it in the air for the air attack.
+  Kunoichi has all eight (Quick Slash, Rising Cut, Low Sweep, Air Slash;
+  Piercing Lunge, Crescent Launcher, Ground Splitter, Moonrise). A fighter
+  without an attack of her own for an aim uses her side attack there.
+- **The dive.** In the air, hold down and the heavy button: the fighter plunges
+  for as long as the button is held, and strikes where it reaches the floor or
+  another fighter. Let go and the dive ends with no strike. Every fighter can
+  dive; Kunoichi's is her own (Falling Fang).
+- **Attacks move.** A grounded swing steps forward as it comes out and carries a
+  run-up with it, but never slides off a ledge. In the air an attack keeps its
+  momentum and can still be steered.
+- **The heavy key in the air is a rising heavy:** the heavy attack carried
+  upward by an extra jump, once per airtime. It is both a finisher and the last
+  part of a recovery. A skill that needs the floor (Waterbender's wave) only
+  gives the jump.
+- A swing also hits a rival standing right on top of you.
 
 ## Playing a match
 
@@ -110,10 +145,12 @@ adds its card to this grid; the menu does not require per-character layout chang
 
 Each hero is data-driven (`data/heroes/<name>/hero.tres`) with its own movement,
 defense, animation, and two skills. Attacks have independently tunable startup,
-active, recovery, post-skill lock, damage, knockback, cooldown, and hitbox/projectile
+active, recovery, end lag, damage, knockback, cooldown, and hitbox/projectile
 values, plus a release frame that pins the art's key pose (a sword landing, a
-fireball leaving the hand) to the exact moment the hit happens. Light attacks lock
-control for 0.3 seconds after finishing; heavy attacks lock control for 0.5 seconds.
+fireball leaving the hand) to the exact moment the hit happens. End lag is paid
+only by an attack that misses, and a skill's cooldown never outlasts it by more
+than the input buffer, so a skill is ready whenever the fighter is (the test
+suite checks both).
 
 - **Kunoichi** — a masked ninja with a silver ponytail and a crimson scarf: a
   **Quick Slash** (light) and an overhead **Heavy Strike** (heavy) with her
@@ -128,6 +165,14 @@ control for 0.3 seconds after finishing; heavy attacks lock control for 0.5 seco
   scales from 1× to 2× damage as it travels.
 - **Lilith** — a winged demoness with a whip: a quick **Whip Lash** (light) and a
   wide overhead **Infernal Whip** (heavy). Slightly floaty in the air.
+- **Knight** — the king's champion, and he knows it: a towering man in battered
+  plate with a greatsword resting on his shoulder and a fist on his hip. Slow,
+  very hard to launch, and he fights as if you were beneath him: a pommel
+  punch (**Rebuke**), a salute that becomes a thrust (**Salute**), a boot
+  (**Heel**), a jousting charge (**Tilt**), an uppercut (**Crownbreaker**), a
+  planted sword that throws everyone near him (**Kneel**), a hammer blow with
+  the crossguard that knocks you downward (**Murder-Stroke**), and a dive that
+  is simply him stepping on you (**Beneath Me**).
 - **Kitsune** — a nine-tailed fox who throws a **Foxfire Orb** (light) and drives
   both palms forward to burst foxfire at close range, the **Foxfire Eruption**
   (heavy).
@@ -179,7 +224,7 @@ parts, simulated chains and the nine animations) and `parts/*.png`. Its
 adds that link. The tools that cut drawings and author animations are a small
 Python kit kept beside the art sources, not in this repository.
 
-All nine fighters are rigged. The game still supports the older sprite-sheet
+All ten fighters are rigged. The game still supports the older sprite-sheet
 drawing (the `*_sheet.png` files and the sheet fields in `hero.tres`) for a
 fighter without a `rig`.
 

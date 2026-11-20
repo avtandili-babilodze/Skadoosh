@@ -50,6 +50,17 @@ func _test_rig(hero: HeroData) -> void:
 		t.check(release > 0.0 and release <= release_end and release_end < length,
 				"%s %s marks its hit inside the animation" % [who, anim])
 
+	# An aimed attack plays its own animation, marked the same way.
+	for skill: AttackData in hero.all_attacks():
+		if skill.rig_animation == "":
+			continue
+		var info := rig.animation_info(skill.rig_animation)
+		var release: float = info.get("release", -1.0)
+		var release_end: float = info.get("release_end", -1.0)
+		t.check(rig.has_animation(skill.rig_animation) and release > 0.0 and release <= release_end
+				and release_end < rig.length_of(skill.rig_animation),
+				"%s/%s has its own animation with the hit marked" % [who, skill.skill_name])
+
 	# Standing: the soles rest on the floor line (the node's origin).
 	rig.play("idle", false)
 	for i in 30:

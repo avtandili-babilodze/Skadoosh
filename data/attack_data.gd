@@ -2,9 +2,10 @@ class_name AttackData
 extends Resource
 ## One attack a hero can perform — a "skill" (e.g. a light or heavy attack).
 ##
-## Each skill defines its OWN damage and knockback, so a hero's light and heavy
-## attacks can be tuned completely independently. A hero references two of these
-## (light_attack / heavy_attack) in its HeroData.
+## Each skill defines its OWN damage and knockback, so every attack of a hero can
+## be tuned completely independently. A hero references a light and a heavy
+## skill in its HeroData, and optionally one more of each per aim (up, down, in
+## the air).
 
 enum Kind { MELEE, RANGED, GROUND_SPIKE }
 
@@ -16,22 +17,35 @@ enum Kind { MELEE, RANGED, GROUND_SPIKE }
 @export var damage: float = 8.0
 ## Base knockback this attack applies (grows further as the victim's damage rises).
 @export var knockback: float = 400.0
-## Upward part of knockback as a fraction of the sideways force (low = flat push).
+## Upward part of knockback as a fraction of the force (low = flat push,
+## negative = a spike toward the floor).
 @export var knockback_up_ratio: float = 0.18
+## Sideways part of knockback as a fraction of the force. 1 is a full push away
+## from the attacker; a launcher that sends its victim straight up uses a small
+## value with a knockback_up_ratio near 1.
+@export var knockback_forward: float = 1.0
 @export_group("Timing")
 ## Delay between pressing the button and the hitbox becoming active.
 @export_range(0.0, 2.0, 0.01) var startup_time: float = 0.08
 ## How long the hitbox remains active. A target can only be hit once per attack.
 @export_range(0.01, 2.0, 0.01) var active_time: float = 0.10
-## Vulnerable recovery after the active window ends.
+## Vulnerable recovery after the active window ends. Once the attack has hit
+## someone, a jump, a dash or the other attack can cut this short.
 @export_range(0.0, 2.0, 0.01) var recovery_time: float = 0.17
-## Full control lock after the animation/recovery finishes. Gravity and existing
-## momentum still apply, but no movement, jump, dash, dodge, or attack can start.
-@export_range(0.0, 2.0, 0.01) var post_end_lag: float = 0.30
-## Cooldown before THIS skill can be used again, in seconds.
+## The price of a miss: a full control lock after recovery, paid only when the
+## attack hit nobody. Gravity and existing momentum still apply, but no movement,
+## jump, dash, dodge, or attack can start. Keep it short (about 0.12 for a
+## light, 0.24 for a heavy): long locks make the whole game feel slow.
+@export_range(0.0, 2.0, 0.01) var post_end_lag: float = 0.12
+## Time from the start of THIS skill until it can start again, in seconds. Keep
+## it between the attack's own length and the moment a miss hands control back,
+## so the skill is ready when the fighter is and a press is never ignored.
 @export var cooldown: float = 0.45
 
 @export_group("Animation")
+## The rig animation this skill plays ("light_up", "heavy_down", ...). Empty, or
+## a name the hero's rig does not have, plays "light_attack" or "heavy_attack".
+@export var rig_animation: String = ""
 ## Optional skill-specific sprite sheet. Falls back to the hero's shared attack pose.
 @export var animation_texture: Texture2D
 @export var animation_hframes: int = 1
@@ -60,11 +74,45 @@ enum Kind { MELEE, RANGED, GROUND_SPIKE }
 ## for a melee skill it bursts out over the hitbox during the active window.
 @export var effect: String = ""
 
+## What a melee skill throws out besides its swing as the hit comes out. One
+## strike gets one of these, never two stacked:
+## "dive" (where a plunge arrives: a crescent coming down, and on the floor
+## dust, a crack and a shock ring), "flash" (a flat crescent out in front: a level cut), "thrust" (a line of
+## light along a stab), "slam" (dust, a crack and a shock ring where the blow
+## meets the floor, under a crescent coming down), "rise" (a column kicked up
+## from the feet and a tall crescent), "moon" (a full ring round a spinning
+## cut), "sweep" (dust thrown along the floor), or "" for nothing. All but the
+## last two are meant for heavy attacks. A lunging step kicks up a little dust
+## on its own.
+## Made of straight rays and sparks instead of arcs: "lance" (a beam along a
+## long thrust), "crown" (a fan of spikes over an uppercut), "sunburst" (half a
+## sun on the floor round a planted blade), "hammer" (rays driven down from a
+## blow in the air), "tread" (a star of cracks under a stomp).
+@export var flourish: String = ""
+## The ribbon of light a blade leaves when it swings. Switch it off for a
+## skill that does not strike with the blade (a pommel, a fist, a boot).
+@export var weapon_arc: bool = true
+
+@export_group("Dive")
+## Above 0 this skill is a dive. Started in the air, the fighter plunges at this
+## speed (px/s) for as long as the heavy button is held, and its hit comes out
+## where it reaches the floor or another fighter. Letting go of the button ends
+## the dive without the hit. The startup is the turn into the plunge.
+@export var dive_speed: float = 0.0
+
 @export_group("Melee reach")
 ## Horizontal reach of the hitbox, in pixels.
 @export var reach: float = 95.0
 ## Total vertical size of the hitbox, in pixels.
 @export var height: float = 90.0
+## Moves the hitbox from its place in front of the body centre: x pushes it
+## further forward, y lower (negative y lifts it, for a strike aimed upward).
+@export var hitbox_offset: Vector2 = Vector2.ZERO
+## Speed of the step forward a grounded melee attack takes as its hit comes out,
+## in pixels/second. Negative uses the fighter's default for a light or heavy.
+@export var lunge: float = -1.0
+## Upward speed given to the attacker as the hit comes out (a rising strike).
+@export var lift: float = 0.0
 
 @export_group("Ranged projectile")
 ## Projectile image (required when kind is RANGED): a single picture, or a

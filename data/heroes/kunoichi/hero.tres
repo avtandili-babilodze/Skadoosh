@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="HeroData" load_steps=16 format=3 uid="uid://cn5aboaia6w8v"]
+[gd_resource type="Resource" script_class="HeroData" load_steps=23 format=3 uid="uid://cn5aboaia6w8v"]
 
 [ext_resource type="JSON" path="res://data/heroes/kunoichi/rig/rig.json" id="20_rig"]
 [ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
@@ -16,7 +16,7 @@
 
 [sub_resource type="Resource" id="light"]
 script = ExtResource("2_atk")
-skill_name = "Quick Slash"
+skill_name = "Quick Draw"
 kind = 0
 damage = 7.0
 knockback = 320.0
@@ -24,7 +24,7 @@ knockback_up_ratio = 0.16
 startup_time = 0.05
 active_time = 0.08
 recovery_time = 0.12
-post_end_lag = 0.3
+post_end_lag = 0.12
 cooldown = 0.35
 animation_texture = ExtResource("8_light_attack")
 animation_hframes = 12
@@ -39,7 +39,8 @@ animation_active_frames = 2
 
 [sub_resource type="Resource" id="heavy"]
 script = ExtResource("2_atk")
-skill_name = "Heavy Strike"
+skill_name = "Flash Draw"
+flourish = "flash"
 kind = 0
 damage = 16.0
 knockback = 600.0
@@ -47,8 +48,8 @@ knockback_up_ratio = 0.22
 startup_time = 0.14
 active_time = 0.1
 recovery_time = 0.22
-post_end_lag = 0.5
-cooldown = 0.75
+post_end_lag = 0.24
+cooldown = 0.7
 animation_texture = ExtResource("9_heavy_attack")
 animation_hframes = 14
 animation_vframes = 1
@@ -56,9 +57,146 @@ animation_frames = 14
 animation_release_frame = 5
 animation_sprite_height = 148.61
 animation_faces_right = true
-reach = 110.0
-height = 95.0
+reach = 125.0
+height = 64.0
 animation_active_frames = 2
+
+[sub_resource type="Resource" id="light_up"]
+script = ExtResource("2_atk")
+skill_name = "Rising Cut"
+kind = 0
+damage = 6.0
+knockback = 330.0
+knockback_up_ratio = 1.0
+knockback_forward = 0.3
+startup_time = 0.06
+active_time = 0.08
+recovery_time = 0.13
+post_end_lag = 0.12
+cooldown = 0.35
+reach = 72.0
+height = 120.0
+hitbox_offset = Vector2(0, -40)
+lunge = 60.0
+rig_animation = "light_up"
+
+[sub_resource type="Resource" id="light_down"]
+script = ExtResource("2_atk")
+skill_name = "Low Sweep"
+kind = 0
+damage = 6.0
+knockback = 280.0
+knockback_up_ratio = 0.6
+knockback_forward = 0.7
+startup_time = 0.07
+active_time = 0.08
+recovery_time = 0.14
+post_end_lag = 0.12
+cooldown = 0.35
+reach = 112.0
+height = 44.0
+hitbox_offset = Vector2(0, 28)
+lunge = 260.0
+rig_animation = "light_down"
+flourish = "sweep"
+
+[sub_resource type="Resource" id="light_air"]
+script = ExtResource("2_atk")
+skill_name = "Air Slash"
+kind = 0
+damage = 6.0
+knockback = 300.0
+knockback_up_ratio = 0.15
+startup_time = 0.05
+active_time = 0.1
+recovery_time = 0.12
+post_end_lag = 0.12
+cooldown = 0.35
+reach = 100.0
+height = 100.0
+hitbox_offset = Vector2(0, 6)
+rig_animation = "light_air"
+
+[sub_resource type="Resource" id="heavy_up"]
+script = ExtResource("2_atk")
+skill_name = "Crescent Launcher"
+kind = 0
+damage = 14.0
+knockback = 560.0
+knockback_up_ratio = 1.0
+knockback_forward = 0.25
+startup_time = 0.14
+active_time = 0.12
+recovery_time = 0.24
+post_end_lag = 0.24
+cooldown = 0.7
+reach = 80.0
+height = 140.0
+hitbox_offset = Vector2(0, -45)
+lunge = 80.0
+lift = 330.0
+rig_animation = "heavy_up"
+flourish = "rise"
+
+[sub_resource type="Resource" id="heavy_down"]
+script = ExtResource("2_atk")
+skill_name = "Ground Splitter"
+kind = 0
+damage = 17.0
+knockback = 600.0
+knockback_up_ratio = 0.85
+knockback_forward = 0.55
+startup_time = 0.17
+active_time = 0.1
+recovery_time = 0.26
+post_end_lag = 0.24
+cooldown = 0.7
+reach = 112.0
+height = 76.0
+hitbox_offset = Vector2(8, 14)
+lunge = 140.0
+rig_animation = "heavy_down"
+flourish = "slam"
+
+[sub_resource type="Resource" id="heavy_air"]
+script = ExtResource("2_atk")
+skill_name = "Moonrise"
+kind = 0
+damage = 13.0
+knockback = 520.0
+knockback_up_ratio = 0.7
+knockback_forward = 0.65
+startup_time = 0.1
+active_time = 0.18
+recovery_time = 0.2
+post_end_lag = 0.24
+cooldown = 0.7
+reach = 96.0
+height = 120.0
+hitbox_offset = Vector2(-37, -10)
+rig_animation = "heavy_air"
+flourish = "moon"
+
+[sub_resource type="Resource" id="heavy_dive"]
+script = ExtResource("2_atk")
+skill_name = "Falling Fang"
+kind = 0
+damage = 15.0
+knockback = 560.0
+knockback_up_ratio = 0.6
+knockback_forward = 0.7
+startup_time = 0.14
+active_time = 0.1
+recovery_time = 0.24
+post_end_lag = 0.24
+cooldown = 0.6
+reach = 58.0
+height = 80.0
+hitbox_offset = Vector2(-18, 34)
+lunge = 0.0
+dive_speed = 1100.0
+rig_animation = "heavy_dive"
+flourish = "dive"
 
 [resource]
 script = ExtResource("1_hero")
@@ -74,6 +212,13 @@ knockback_percent_scale = 1.0
 min_attack_interval = 0.0
 light_attack = SubResource("light")
 heavy_attack = SubResource("heavy")
+light_up = SubResource("light_up")
+light_down = SubResource("light_down")
+light_air = SubResource("light_air")
+heavy_up = SubResource("heavy_up")
+heavy_down = SubResource("heavy_down")
+heavy_air = SubResource("heavy_air")
+heavy_dive = SubResource("heavy_dive")
 jump_texture = ExtResource("5_jump")
 fall_texture = ExtResource("6_fall")
 jump_hframes = 8

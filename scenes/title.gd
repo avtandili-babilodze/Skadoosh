@@ -132,7 +132,9 @@ func _build_how_to() -> Control:
 
 	var rules := UI.label(
 			"Every hit raises your rival's %.  The higher it climbs, the farther they fly.\n"
-			+ "Knock them past the edge of the stage to take a stock.  Last fighter standing wins.",
+			+ "Knock them past the edge of the stage to take a stock.  Last fighter standing wins.\n"
+			+ "Land a hit and you can act at once: follow a light with your heavy, or jump or dash after them."
+			+ "  Miss and you are left open.",
 			18, UI.TEXT, UI.MEDIUM)
 	rules.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	rules.custom_minimum_size.x = 760.0
@@ -175,7 +177,10 @@ func _controls_column(player: int) -> Control:
 		[[key.call("down")], "Fast-fall, drop through platforms"],
 		[[key.call("dash")], "Dash with a direction, dodge without"],
 		[[key.call("attack2")], "Light attack"],
-		[[key.call("attack")], "Heavy attack (extra jump in the air)"],
+		[[key.call("attack")], "Heavy attack, a rising strike in the air"],
+		[[key.call("left"), key.call("right"), key.call("down")],
+				"Aim attacks: side, down for low, still for up"],
+		[[key.call("down"), key.call("attack")], "In the air: hold both to dive"],
 	]
 	for row in rows:
 		column.add_child(UI.hint(row[0], row[1], color))

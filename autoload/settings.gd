@@ -6,14 +6,30 @@ extends Node
 
 signal changed
 
+const DesktopShortcut := preload("res://autoload/desktop_shortcut.gd")
+
 const PATH := "user://settings.cfg"
+## Layout of the settings file. Version 2 made fullscreen the default: an older
+## file only ever recorded the old windowed default, so its value is not kept.
+const VERSION := 2
 const MUSIC_BUS := &"Music"
 const SFX_BUS := &"SFX"
 
 ## 0..1 slider positions; 0 mutes the bus.
 var music_volume: float = 0.7
 var sfx_volume: float = 0.9
-var fullscreen: bool = false
+## The game opens covering the whole screen; F11 or the settings panel switch
+## it to a window.
+var fullscreen: bool = true
+## Whether this player has been given a desktop shortcut yet, and the file that
+## shortcut starts ("" when the one on the desktop is not the game's to change).
+var shortcut_offered: bool = false
+var shortcut_target: String = ""
+## A run started with WINDOW_FLAG stays in a window whatever the saved setting
+## says, without changing that setting: tools and capture runs rely on it. (The
+## engine's own -w switch loses to the project's fullscreen start.)
+const WINDOW_FLAG := "--windowed"
+var _window_forced: bool = false
 ## Camera shake on hits and knock-outs.
 var screen_shake: bool = true
 ## Lives each fighter starts a match with.
@@ -27,8 +43,12 @@ func _ready() -> void:
 	_ensure_bus(MUSIC_BUS)
 	_ensure_bus(SFX_BUS)
 	_load()
-	_fit_window_to_screen()
+	# A user argument: godot --path . -- --windowed
+	_window_forced = OS.get_cmdline_user_args().has(WINDOW_FLAG)
 	apply()
+	if not fullscreen or _window_forced:
+		_fit_window_to_screen()
+	_offer_desktop_shortcut()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -39,8 +59,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		save()
 
 
-## The default window is sized for a 1080p display. On a smaller screen it
-## would hang off the edges, so shrink it to fit and centre it.
+## A window that fills the screen or hangs off it (one that has just left
+## fullscreen, or the default size on a small display) goes back to the
+## default window size, shrunk to fit if needed, and is centred.
 func _fit_window_to_screen() -> void:
 	if DisplayServer.get_name() == "headless":
 		return
@@ -48,8 +69,11 @@ func _fit_window_to_screen() -> void:
 	var window := DisplayServer.window_get_size()
 	if window.x <= screen.size.x * 0.96 and window.y <= screen.size.y * 0.96:
 		return
-	var shrink := minf(screen.size.x * 0.9 / window.x, screen.size.y * 0.9 / window.y)
-	var fitted := Vector2i(Vector2(window) * shrink)
+	var wanted := Vector2(
+			ProjectSettings.get_setting("display/window/size/window_width_override"),
+			ProjectSettings.get_setting("display/window/size/window_height_override"))
+	var shrink := minf(1.0, minf(screen.size.x * 0.9 / wanted.x, screen.size.y * 0.9 / wanted.y))
+	var fitted := Vector2i(wanted * shrink)
 	DisplayServer.window_set_size(fitted)
 	DisplayServer.window_set_position(screen.position + (screen.size - fitted) / 2)
 
@@ -58,16 +82,53 @@ func _fit_window_to_screen() -> void:
 func apply() -> void:
 	_set_bus_volume(MUSIC_BUS, music_volume)
 	_set_bus_volume(SFX_BUS, sfx_volume)
-	if DisplayServer.get_name() != "headless":
-		var wanted := (DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen
-				else DisplayServer.WINDOW_MODE_WINDOWED)
-		if DisplayServer.window_get_mode() != wanted:
-			DisplayServer.window_set_mode(wanted)
+	_apply_window_mode()
 	changed.emit()
+
+
+## Switches between fullscreen and a window only when the setting changed, so
+## a window the player resized or maximised is left as it is.
+func _apply_window_mode() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var wanted := fullscreen and not _window_forced
+	var mode := DisplayServer.window_get_mode()
+	var is_full := (mode == DisplayServer.WINDOW_MODE_FULLSCREEN
+			or mode == DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN)
+	if is_full == wanted:
+		return
+	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN if wanted
+			else DisplayServer.WINDOW_MODE_WINDOWED)
+	if not wanted:
+		_fit_window_to_screen()
+
+
+## A released build puts its own shortcut on the desktop the first time it
+## runs, and repoints that shortcut when the game has since moved to another
+## file. Any run makes one when started with DesktopShortcut.FLAG.
+func _offer_desktop_shortcut() -> void:
+	if not DesktopShortcut.supported():
+		return
+	var released := OS.has_feature("template")
+	var program := OS.get_executable_path()
+	var first := released and not shortcut_offered
+	var wanted := OS.get_cmdline_user_args().has(DesktopShortcut.FLAG)
+	if not wanted and released:
+		wanted = DesktopShortcut.is_due(shortcut_offered, shortcut_target, program,
+				DesktopShortcut.exists())
+	if wanted and DesktopShortcut.make():
+		# A shortcut asked for from a source run is the developer's own to keep.
+		shortcut_target = program if released else ""
+	if wanted or first:
+		shortcut_offered = true
+		save()
 
 
 func save() -> void:
 	var file := ConfigFile.new()
+	file.set_value("meta", "version", VERSION)
+	file.set_value("shortcut", "offered", shortcut_offered)
+	file.set_value("shortcut", "target", shortcut_target)
 	file.set_value("audio", "music", music_volume)
 	file.set_value("audio", "sfx", sfx_volume)
 	file.set_value("video", "fullscreen", fullscreen)
@@ -83,7 +144,10 @@ func _load() -> void:
 		return
 	music_volume = clampf(file.get_value("audio", "music", music_volume), 0.0, 1.0)
 	sfx_volume = clampf(file.get_value("audio", "sfx", sfx_volume), 0.0, 1.0)
-	fullscreen = bool(file.get_value("video", "fullscreen", fullscreen))
+	if int(file.get_value("meta", "version", 1)) >= 2:
+		fullscreen = bool(file.get_value("video", "fullscreen", fullscreen))
+	shortcut_offered = bool(file.get_value("shortcut", "offered", shortcut_offered))
+	shortcut_target = str(file.get_value("shortcut", "target", shortcut_target))
 	screen_shake = bool(file.get_value("video", "screen_shake", screen_shake))
 	stocks = clampi(int(file.get_value("match", "stocks", stocks)), 1, 9)
 	cpu_level = clampi(int(file.get_value("match", "cpu_level", cpu_level)), 0, 2)

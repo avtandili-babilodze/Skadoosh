@@ -6,6 +6,11 @@ extends Resource
 ## so creating a new fighter means filling in numbers, NOT writing code.
 ## The Player scene reads these values to configure itself at runtime.
 
+var _default_dive: AttackData = null
+
+## Where an attack is aimed when its button is pressed.
+enum Aim { SIDE, UP, DOWN, AIR, DIVE }
+
 @export var hero_name: String = "Unnamed"
 @export_multiline var description: String = ""
 
@@ -20,7 +25,8 @@ extends Resource
 @export var jump_velocity: float = -650.0
 ## Total jumps available before landing. 2 = double jump, 3 = triple, etc.
 @export var max_jumps: int = 2
-## Extra mid-air jumps from the heavy-attack key, separate from max_jumps. Refills on landing.
+## Rising heavies per airtime: the heavy-attack key in the air lifts the fighter
+## like a jump while the heavy attack comes out. Separate from max_jumps; refills on landing.
 @export var air_attack_jumps: int = 1
 ## Multiplies gravity. 1.0 = normal fall, higher = falls faster/heavier.
 @export var gravity_scale: float = 1.4
@@ -51,10 +57,25 @@ extends Resource
 @export var weapon_sound: String = ""
 
 @export_group("Skills")
-## The quick, weaker attack (bound to the secondary attack key).
+## The quick, weaker attack (bound to the secondary attack key). It is the side
+## attack, and stands in for every aimed light attack the hero does not have.
 @export var light_attack: AttackData
-## The slower, stronger attack (bound to the primary attack key).
+## The slower, stronger attack (bound to the primary attack key). It is the side
+## attack, and stands in for every aimed heavy attack the hero does not have.
 @export var heavy_attack: AttackData
+@export_subgroup("Aimed attacks")
+## Standing still (no direction held) on the ground: a strike aimed upward.
+@export var light_up: AttackData
+## Holding down on the ground: a low strike.
+@export var light_down: AttackData
+## Anywhere in the air.
+@export var light_air: AttackData
+@export var heavy_up: AttackData
+@export var heavy_down: AttackData
+@export var heavy_air: AttackData
+## Heavy with down held in the air: the dive (a skill with a dive_speed). A hero
+## without one of its own gets default_dive().
+@export var heavy_dive: AttackData
 
 @export_group("Attack Appearance")
 ## Legacy/shared attack pose used when a skill has no animation sheet of its own.
@@ -112,6 +133,12 @@ extends Resource
 @export var texture: Texture2D
 ## Which way the art is drawn. Set FALSE if the character faces left in the image.
 @export var faces_right: bool = true
+## The fighter's signature colour: sparks, blade arcs, attack effects and UI
+## accents. Left transparent, it is read from the most vivid pixels of the icon,
+## which suits a fighter whose colour is on its head and shoulders. Set it when
+## the icon would give the wrong answer (a steel-clad fighter whose colour is a
+## cape below the bust comes out skin-toned).
+@export var accent: Color = Color(0, 0, 0, 0)
 ## Fallback body color, used when no texture is assigned.
 @export var color: Color = Color(0.3, 0.6, 1.0)
 ## On-screen height of one idle cell, in px. Keep it in step with the other poses'
@@ -170,3 +197,68 @@ extends Resource
 @export var death_sprite_height: float = 110.0
 ## Set FALSE if the death art is drawn facing left.
 @export var death_faces_right: bool = true
+
+
+## The skill a button gives for an aim. A hero without an attack of its own for
+## that aim uses its side attack.
+func attack_for(is_heavy: bool, aim: Aim) -> AttackData:
+	var aimed: AttackData = null
+	match aim:
+		Aim.UP:
+			aimed = heavy_up if is_heavy else light_up
+		Aim.DOWN:
+			aimed = heavy_down if is_heavy else light_down
+		Aim.AIR:
+			aimed = heavy_air if is_heavy else light_air
+		Aim.DIVE:
+			# Only the heavy button dives; the light one keeps its air attack.
+			if is_heavy:
+				return heavy_dive if heavy_dive != null else default_dive()
+			aimed = light_air
+	if aimed != null:
+		return aimed
+	return heavy_attack if is_heavy else light_attack
+
+
+## Every skill the hero has, light ones first.
+func all_attacks() -> Array[AttackData]:
+	var skills: Array[AttackData] = []
+	for skill: AttackData in [light_attack, light_up, light_down, light_air,
+			heavy_attack, heavy_up, heavy_down, heavy_air, heavy_dive]:
+		if skill != null:
+			skills.append(skill)
+	return skills
+
+
+func is_heavy_skill(skill: AttackData) -> bool:
+	return skill != null and skill in [heavy_attack, heavy_up, heavy_down, heavy_air,
+			heavy_dive, _default_dive]
+
+
+## The dive every fighter has until it is given one of its own: a plunge that
+## ends in a blow around the body, nearly as strong as its heavy attack. It
+## plays the rig's "heavy_dive" animation when there is one, the heavy attack's
+## otherwise.
+func default_dive() -> AttackData:
+	if _default_dive == null:
+		var dive := AttackData.new()
+		dive.skill_name = "Dive"
+		dive.kind = AttackData.Kind.MELEE
+		dive.damage = (heavy_attack.damage if heavy_attack != null else 14.0) * 0.9
+		dive.knockback = 540.0
+		dive.knockback_up_ratio = 0.6
+		dive.knockback_forward = 0.7
+		dive.startup_time = 0.14
+		dive.active_time = 0.1
+		dive.recovery_time = 0.22
+		dive.post_end_lag = 0.24
+		dive.cooldown = 0.6
+		dive.reach = 58.0
+		dive.height = 84.0
+		dive.hitbox_offset = Vector2(-18.0, 30.0)      # under the body, not out in front
+		dive.lunge = 0.0
+		dive.dive_speed = 1050.0
+		dive.flourish = "dive"
+		dive.rig_animation = "heavy_dive"
+		_default_dive = dive
+	return _default_dive

@@ -9,6 +9,9 @@ const FLASH_SHADER := preload("res://entities/player/flash.gdshader")
 
 ## Vertical speed below which the jump/dive pose is held rather than swapped.
 const AIR_POSE_DEADZONE := 40.0
+## How long the dash pose is kept from the start of a dash, in seconds: longer
+## than the burst itself, which is over in about a tenth of a second.
+const DASH_POSE_HOLD := 0.22
 ## How fast the white hit flash fades, in units per second.
 const FLASH_FADE := 6.0
 ## Sideways rattle of a struck fighter while the hit is frozen, in pixels.
@@ -49,6 +52,8 @@ var hurt_time: float = 0.0
 var land_time: float = 0.0
 ## Time since the current attack's artwork started.
 var attack_time: float = 0.0
+## Time spent in the dash pose (rigs with a "dash" animation only).
+var dash_time: float = 0.0
 ## Scale set by the current sheet, before procedural effects are applied.
 var base_scale: float = 1.0
 ## Current vertical squash/stretch; 1.0 is neutral.
@@ -130,6 +135,16 @@ func select_pose(move_direction: float) -> void:
 		return
 	var hero := _fighter.hero
 	var on_floor := _fighter.is_on_floor()
+	# A dash throws a rigged fighter into its dash pose, kept for a beat after the
+	# burst (while a direction is still held) so so short a move still reads.
+	if rig != null and rig.has_animation("dash") and not _fighter.is_hit_stunned():
+		if _fighter.is_dashing():
+			if pose != "dash":
+				pose = "dash"
+				dash_time = 0.0
+			return
+		if pose == "dash" and dash_time < DASH_POSE_HOLD and move_direction != 0.0:
+			return
 	if _fighter.is_hit_stunned() and has_animation("hurt"):
 		select_hurt_pose()
 	elif not on_floor and has_animation("jump"):
@@ -331,9 +346,18 @@ func _advance_rig(delta: float) -> void:
 			hurt_time += delta
 			anim = "hurt"
 			t = hurt_time
+		"dash":
+			dash_time += delta
+			anim = "dash"
+			t = dash_time
 		"attack":
 			attack_time += delta
-			anim = "light_attack" if _attack_skill == _fighter.hero.light_attack else "heavy_attack"
+			if _fighter.is_diving():
+				# A dive holds its plunge pose (the frame the hit starts on) until it arrives.
+				attack_time = minf(attack_time, _attack_skill.startup_time)
+			anim = _attack_skill.rig_animation
+			if anim == "" or not rig.has_animation(anim):
+				anim = "heavy_attack" if _fighter.hero.is_heavy_skill(_attack_skill) else "light_attack"
 			t = rig_attack_time(_attack_skill, attack_time, rig.animation_info(anim), true)
 		_:
 			idle_time += delta
@@ -342,7 +366,7 @@ func _advance_rig(delta: float) -> void:
 	# Chains rest on the ground the fighter stands on, and hang freely in the air.
 	rig.floor_y = 0.0 if _fighter.is_on_floor() else INF
 	# Attacks cut in fast so a short wind-up is not blended away.
-	rig.play(anim, true, 0.03 if pose == "attack" else FighterRig.BLEND_TIME)
+	rig.play(anim, true, 0.03 if pose == "attack" or pose == "dash" else FighterRig.BLEND_TIME)
 	rig.pose(t, delta, _fighter.velocity)
 
 	if _fighter.is_dashing():
@@ -367,8 +391,13 @@ func _advance_rig(delta: float) -> void:
 		_drive_whip(delta)
 	if trail != null:
 		trail.color = Roster.accent_of(_fighter.hero).lerp(Color.WHITE, 0.55)
+		# Only the strike leaves an arc. A blade on its way back to rest would
+		# draw a second one, and the attack would read as two cuts.
+		# (A dive's cut goes straight down and has its own effect; the blade
+		# turning to get there would leave an arc out to the side.)
 		trail.feed(rig.named_point("sword_tip"), rig.named_point("sword_guard"), delta,
-				pose == "attack" and _fighter.is_attacking())
+				pose == "attack" and _fighter.is_striking() and not _fighter.is_dive_attack()
+				and (_attack_skill == null or _attack_skill.weapon_arc))
 
 
 ## The whip pays out through an attack's wind-up, snaps straight toward the

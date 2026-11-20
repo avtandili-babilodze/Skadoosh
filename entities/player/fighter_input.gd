@@ -9,6 +9,8 @@ extends RefCounted
 var axis: float = 0.0
 ## Held: fast-fall, and falling through platforms.
 var down: bool = false
+## Held: the heavy attack button. A dive lasts for as long as it is.
+var heavy_held: bool = false
 ## Actions that went from up to down this tick: "jump", "dash", "attack",
 ## "attack2", "down".
 var pressed: Dictionary = {}
@@ -17,6 +19,7 @@ var pressed: Dictionary = {}
 func poll(fighter: Fighter, _delta: float) -> void:
 	axis = Input.get_axis(fighter.action_left, fighter.action_right)
 	down = Input.is_action_pressed(fighter.action_down)
+	heavy_held = Input.is_action_pressed(fighter.action_attack)
 	pressed = {
 		"jump": Input.is_action_just_pressed(fighter.action_jump),
 		"dash": Input.is_action_just_pressed(fighter.action_dash),
@@ -34,4 +37,5 @@ func just(action: String) -> bool:
 func clear() -> void:
 	axis = 0.0
 	down = false
+	heavy_held = false
 	pressed = {}

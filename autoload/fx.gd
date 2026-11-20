@@ -11,6 +11,10 @@ const IMPACT := preload("res://entities/fx/impact.gd")
 const KO_BLAST := preload("res://entities/fx/ko_blast.gd")
 const GHOST := preload("res://entities/fx/ghost.gd")
 const DAMAGE_NUMBER := preload("res://entities/fx/damage_number.gd")
+const STREAK := preload("res://entities/fx/streak.gd")
+const CRESCENT := preload("res://entities/fx/crescent.gd")
+const RING := preload("res://entities/fx/ring.gd")
+const RAYS := preload("res://entities/fx/rays.gd")
 
 ## Time scale while a hit is frozen. Not zero: a few engine paths divide by it.
 const STOP_SCALE := 0.02
@@ -119,6 +123,14 @@ func hit(victim: Node2D, dir: float, damage: float, force: float, color: Color,
 		if heavy:
 			Sfx.play("hit_heavy", -6.0, 0.9)
 	elif sound == "blade":
+		# A blade leaves a cut across the body, slanted with the launch.
+		var cut := Vector2(dir, -0.35).normalized().rotated(randf_range(-0.9, 0.9)) * lerpf(34.0, 62.0, power)
+		streak(at - cut, at + cut, color.lerp(Color.WHITE, 0.5), lerpf(6.0, 12.0, power), 0.18)
+		if heavy:
+			# A heavy blade hit crosses that cut with a second one and scatters petals.
+			var cross := cut.rotated(randf_range(1.0, 1.5)) * 0.8
+			streak(at - cross, at + cross, Color.WHITE, lerpf(5.0, 9.0, power), 0.22)
+			petals(at, color, 10, Vector2(dir, -0.6))
 		Sfx.play("hit_blade_heavy" if heavy else "hit_blade_light", 0.0, lerpf(1.08, 0.92, power))
 	elif projectile:
 		Sfx.play("hit_magic", -1.0, lerpf(1.1, 0.88, power))
@@ -147,6 +159,61 @@ func dust(feet: Vector2, dir: float, count: int = 5, speed: float = 120.0) -> vo
 		sides = [signf(dir)]
 	for side in sides:
 		burst(feet, DUST_COLOR, count, speed, Vector2(side, -0.28), 26.0, 0.36, 5.0, 0.0)
+
+
+## A line of light from one point to another that snaps out and fades: the
+## flash along a thrust, a cut across a body, a crack along the floor.
+func streak(from: Vector2, to: Vector2, color: Color, width: float = 6.0, life: float = 0.15) -> void:
+	if not is_active():
+		return
+	var line := STREAK.new()
+	line.setup(to - from, color, width, life)
+	_add(line, from)
+
+
+## The crescent a heavy cut leaves in the air (see crescent.gd). Angles are
+## degrees on screen for a fighter facing right (0 forward, 90 toward the
+## floor, -90 up), from where the blade started to where it ended; `facing`
+## mirrors the arc for a fighter facing left and `squash` flattens it (a level
+## cut seen from the side).
+func crescent(at: Vector2, facing: float, radius: float, from_degrees: float, to_degrees: float,
+		color: Color, thickness: float = 22.0, life: float = 0.3, squash: float = 1.0) -> void:
+	if not is_active():
+		return
+	var arc := CRESCENT.new()
+	arc.setup(radius, deg_to_rad(from_degrees), deg_to_rad(to_degrees), thickness, color, life)
+	_add(arc, at)
+	arc.scale = Vector2(-1.0 if facing < 0.0 else 1.0, squash)
+
+
+## A ring of light that opens out and fades; `squash` flattens it onto the floor.
+func ring(at: Vector2, radius: float, color: Color, life: float = 0.35, squash: float = 1.0) -> void:
+	if not is_active():
+		return
+	var halo := RING.new()
+	halo.setup(radius, color, life)
+	_add(halo, at)
+	halo.scale = Vector2(1.0, squash)
+
+
+## A burst of straight rays from one point (see rays.gd): `count` of them,
+## long and short alternating, spread from `from_degrees` to `to_degrees` (0
+## forward, 90 toward the floor, -90 up, for a fighter facing right). `facing`
+## mirrors the fan and `squash` flattens it (a star lying on the floor).
+func rays(at: Vector2, color: Color, count: int, length: float, from_degrees: float, to_degrees: float,
+		width: float = 10.0, life: float = 0.3, squash: float = 1.0, facing: float = 1.0) -> void:
+	if not is_active():
+		return
+	var burst_of_rays := RAYS.new()
+	burst_of_rays.setup(count, length, deg_to_rad(from_degrees), deg_to_rad(to_degrees), color, width, life)
+	_add(burst_of_rays, at)
+	burst_of_rays.scale = Vector2(-1.0 if facing < 0.0 else 1.0, squash)
+
+
+## A scatter of petals thrown along `direction` that drift down slowly.
+func petals(at: Vector2, color: Color, count: int = 12, direction: Vector2 = Vector2.UP) -> void:
+	burst(at, color, count, 280.0, direction, 70.0, 0.9, 4.2, 170.0)
+	burst(at, color.lerp(Color.WHITE, 0.6), maxi(1, count / 2), 210.0, direction, 85.0, 0.75, 3.0, 120.0)
 
 
 ## A single smoke puff left behind a launched fighter.

@@ -7,6 +7,8 @@ const ARENA_SCENE := preload("res://scenes/arena.tscn")
 const CHARACTER_SELECT_SCENE := preload("res://scenes/character_select.tscn")
 const MAP_SELECT_SCENE := preload("res://scenes/map_select.tscn")
 const TITLE_SCENE := preload("res://scenes/title.tscn")
+const DesktopShortcut := preload("res://autoload/desktop_shortcut.gd")
+const SETTINGS_SCRIPT := preload("res://autoload/settings.gd")
 
 ## The runner: check() records a result; test nodes are added under it.
 var t
@@ -15,6 +17,7 @@ var t
 func run(runner: Node) -> bool:
 	t = runner
 	await _test_menus()
+	_test_window_and_shortcut()
 	await _test_character_select()
 	await _test_stages()
 	await _test_ring_out_and_respawn()
@@ -23,6 +26,32 @@ func run(runner: Node) -> bool:
 	await _test_ledge_help()
 	Roster.map = null
 	return true
+
+
+func _test_window_and_shortcut() -> void:
+	t.check(int(ProjectSettings.get_setting("display/window/size/mode")) == DisplayServer.WINDOW_MODE_FULLSCREEN,
+			"the game window opens covering the whole screen")
+	var fresh = SETTINGS_SCRIPT.new()
+	t.check(fresh.fullscreen, "a new player starts in fullscreen")
+	fresh.free()
+
+	var exe := "C:/Games/Skadoosh.exe"
+	t.check(DesktopShortcut.is_due(false, "", exe, false), "a first launch makes a desktop shortcut")
+	t.check(not DesktopShortcut.is_due(false, "", exe, true),
+			"a first launch leaves a shortcut that is already on the desktop alone")
+	t.check(not DesktopShortcut.is_due(true, exe, exe, false),
+			"a shortcut the player deleted is not made again")
+	t.check(DesktopShortcut.is_due(true, "C:/Downloads/Skadoosh.exe", exe, true),
+			"a shortcut the game made follows the game to a new file")
+	t.check(not DesktopShortcut.is_due(true, exe, exe, true)
+			and not DesktopShortcut.is_due(true, "", exe, true),
+			"a shortcut that is current, or not the game's own, is left alone")
+
+	var icon := DesktopShortcut.icon_bytes(Image.create(64, 64, false, Image.FORMAT_RGBA8))
+	t.check(icon.decode_u16(2) == 1 and icon.decode_u16(4) == 1 and icon.decode_u32(18) == 22
+			and icon.decode_u32(14) == icon.size() - 22
+			and icon.slice(22, 26) == PackedByteArray([0x89, 0x50, 0x4E, 0x47]),
+			"the shortcut icon is a Windows .ico file holding one PNG image")
 
 
 func _test_menus() -> void:

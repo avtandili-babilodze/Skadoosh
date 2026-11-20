@@ -22,6 +22,7 @@ const KITS := {
 	"Antiope": [MELEE, MELEE],
 	"Musashi": [MELEE, MELEE],
 	"Akane": [MELEE, SPIKE],
+	"Knight": [MELEE, MELEE],
 }
 
 ## Fewest frames an animation may have and still read as smooth motion.
@@ -80,10 +81,33 @@ func _test_skills(hero: HeroData) -> void:
 	_validate_skill(hero, hero.heavy_attack)
 	if hero.light_attack == null or hero.heavy_attack == null:
 		return
-	t.check(is_equal_approx(hero.light_attack.post_end_lag, 0.3),
-			"%s light attack has 0.3 seconds of post-skill lock" % who)
-	t.check(is_equal_approx(hero.heavy_attack.post_end_lag, 0.5),
-			"%s heavy attack has 0.5 seconds of post-skill lock" % who)
+	# Aimed attacks are optional. The ones a hero has follow the same rules, and
+	# every aim gives some skill: the side attack stands in for a missing one.
+	for skill: AttackData in hero.all_attacks():
+		if skill == hero.light_attack or skill == hero.heavy_attack:
+			continue
+		_validate_skill(hero, skill)
+		var limit := 0.3 if hero.is_heavy_skill(skill) else 0.15
+		t.check(skill.post_end_lag > 0.0 and skill.post_end_lag <= limit,
+				"%s/%s pays a short end lag when it misses" % [who, skill.skill_name])
+		t.check(skill.kind == AttackData.Kind.MELEE, "%s/%s is a melee strike" % [who, skill.skill_name])
+	for is_heavy: bool in [false, true]:
+		for aim: HeroData.Aim in HeroData.Aim.values():
+			var aimed := hero.attack_for(is_heavy, aim)
+			t.check(aimed != null and hero.is_heavy_skill(aimed) == is_heavy,
+					"%s has a %s attack for every aim" % [who, "heavy" if is_heavy else "light"])
+	# A miss costs something, a heavy miss costs more, and neither freezes the
+	# fighter for long: long locks are what make a fighting game feel slow.
+	var light_lag := hero.light_attack.post_end_lag
+	var heavy_lag := hero.heavy_attack.post_end_lag
+	t.check(light_lag > 0.0 and light_lag <= 0.15,
+			"%s light attack pays a short end lag when it misses (%.2f s)" % [who, light_lag])
+	t.check(heavy_lag > light_lag and heavy_lag <= 0.3,
+			"%s heavy attack pays a longer, still short, end lag when it misses (%.2f s)" % [who, heavy_lag])
+	var light_whiff := hero.light_attack.startup_time + hero.light_attack.active_time \
+			+ hero.light_attack.recovery_time + light_lag
+	t.check(hero.min_attack_interval <= light_whiff + Fighter.INPUT_BUFFER,
+			"%s can attack again as soon as a missed light hands control back" % who)
 	t.check(hero.light_attack.animation_texture != hero.heavy_attack.animation_texture,
 			"%s light and heavy attacks use different animation sheets" % who)
 	if KITS.has(who):
@@ -100,6 +124,10 @@ func _validate_skill(hero: HeroData, skill: AttackData) -> void:
 	t.check(skill.active_time > 0.0, "%s has an active window" % label)
 	t.check(total_time > 0.0, "%s has valid phase timing" % label)
 	t.check(skill.cooldown >= total_time, "%s cooldown covers its full animation" % label)
+	# A skill still cooling down after a miss has handed control back would
+	# ignore the press; the input buffer covers at most this much.
+	t.check(skill.cooldown <= total_time + skill.post_end_lag + Fighter.INPUT_BUFFER + 0.001,
+			"%s is ready again when the fighter is, so a press is never ignored" % label)
 	if skill.kind == RANGED:
 		var art := skill.projectile_texture
 		t.check(art != null, "%s has projectile art" % label)

@@ -20,6 +20,7 @@ const HERO_PATHS := [
 	"res://data/heroes/antiope/hero.tres",
 	"res://data/heroes/musashi/hero.tres",
 	"res://data/heroes/akane/hero.tres",
+	"res://data/heroes/knight/hero.tres",
 ]
 
 ## Every selectable stage, in the order they appear on the map select.
@@ -95,7 +96,9 @@ func accent_of(hero: HeroData) -> Color:
 	if _accents.has(hero):
 		return _accents[hero]
 	var accent := hero.color
-	if hero.icon != null:
+	if hero.accent.a > 0.0:
+		accent = hero.accent
+	elif hero.icon != null:
 		var image := hero.icon.get_image()
 		if image != null and not image.is_empty():
 			if image.is_compressed():

@@ -1,0 +1,278 @@
+[gd_resource type="Resource" script_class="HeroData" load_steps=23 format=3]
+
+[ext_resource type="JSON" path="res://data/heroes/knight/rig/rig.json" id="90_rig"]
+[ext_resource type="Script" path="res://data/hero_data.gd" id="1_hero"]
+[ext_resource type="Script" path="res://data/attack_data.gd" id="2_atk"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/idle_sheet.png" id="3_idle"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/run_sheet.png" id="4_run"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/jump_sheet.png" id="5_jump"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/fall_sheet.png" id="6_fall"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/land_sheet.png" id="7_land"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/light_attack_sheet.png" id="8_light_attack"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/heavy_attack_sheet.png" id="9_heavy_attack"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/hurt_sheet.png" id="10_hurt"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/death_sheet.png" id="11_death"]
+[ext_resource type="Texture2D" path="res://data/heroes/knight/icon.png" id="12_icon"]
+
+[sub_resource type="Resource" id="light"]
+script = ExtResource("2_atk")
+skill_name = "Rebuke"
+kind = 0
+damage = 6.0
+knockback = 300.0
+knockback_up_ratio = 0.15
+startup_time = 0.07
+active_time = 0.07
+recovery_time = 0.14
+post_end_lag = 0.13
+cooldown = 0.4
+animation_texture = ExtResource("8_light_attack")
+animation_hframes = 9
+animation_vframes = 1
+animation_frames = 9
+animation_release_frame = 2
+animation_sprite_height = 173.85
+animation_faces_right = true
+reach = 80.0
+height = 56.0
+hitbox_offset = Vector2(0, -22)
+lunge = 150.0
+weapon_arc = false
+
+[sub_resource type="Resource" id="heavy"]
+script = ExtResource("2_atk")
+skill_name = "Tilt"
+kind = 0
+damage = 19.0
+knockback = 680.0
+knockback_up_ratio = 0.18
+startup_time = 0.22
+active_time = 0.12
+recovery_time = 0.3
+post_end_lag = 0.3
+cooldown = 0.9
+animation_texture = ExtResource("9_heavy_attack")
+animation_hframes = 17
+animation_vframes = 1
+animation_frames = 17
+animation_release_frame = 5
+animation_sprite_height = 213.1
+animation_faces_right = true
+reach = 150.0
+height = 44.0
+hitbox_offset = Vector2(0, 4)
+lunge = 520.0
+flourish = "lance"
+
+[sub_resource type="Resource" id="light_up"]
+script = ExtResource("2_atk")
+skill_name = "Salute"
+damage = 7.0
+knockback = 360.0
+knockback_up_ratio = 1.0
+knockback_forward = 0.2
+startup_time = 0.1
+active_time = 0.08
+recovery_time = 0.16
+post_end_lag = 0.14
+cooldown = 0.45
+reach = 36.0
+height = 130.0
+hitbox_offset = Vector2(0, -104)
+lunge = 0.0
+kind = 0
+rig_animation = "light_up"
+
+[sub_resource type="Resource" id="light_down"]
+script = ExtResource("2_atk")
+skill_name = "Heel"
+damage = 6.0
+knockback = 260.0
+knockback_up_ratio = 0.7
+knockback_forward = 0.5
+startup_time = 0.09
+active_time = 0.08
+recovery_time = 0.16
+post_end_lag = 0.13
+cooldown = 0.42
+reach = 70.0
+height = 44.0
+hitbox_offset = Vector2(0, 30)
+lunge = 60.0
+weapon_arc = false
+kind = 0
+rig_animation = "light_down"
+
+[sub_resource type="Resource" id="light_air"]
+script = ExtResource("2_atk")
+skill_name = "Offhand"
+damage = 8.0
+knockback = 340.0
+knockback_up_ratio = 0.1
+startup_time = 0.07
+active_time = 0.09
+recovery_time = 0.15
+post_end_lag = 0.14
+cooldown = 0.45
+reach = 110.0
+height = 110.0
+hitbox_offset = Vector2(0, 8)
+kind = 0
+rig_animation = "light_air"
+
+[sub_resource type="Resource" id="heavy_up"]
+script = ExtResource("2_atk")
+skill_name = "Crownbreaker"
+damage = 17.0
+knockback = 640.0
+knockback_up_ratio = 1.0
+knockback_forward = 0.2
+startup_time = 0.19
+active_time = 0.11
+recovery_time = 0.28
+post_end_lag = 0.28
+cooldown = 0.85
+reach = 64.0
+height = 120.0
+hitbox_offset = Vector2(0, -52)
+lunge = 40.0
+flourish = "crown"
+weapon_arc = false
+kind = 0
+rig_animation = "heavy_up"
+
+[sub_resource type="Resource" id="heavy_down"]
+script = ExtResource("2_atk")
+skill_name = "Kneel"
+damage = 20.0
+knockback = 700.0
+knockback_up_ratio = 1.0
+knockback_forward = 0.3
+startup_time = 0.24
+active_time = 0.1
+recovery_time = 0.34
+post_end_lag = 0.3
+cooldown = 0.95
+reach = 110.0
+height = 60.0
+hitbox_offset = Vector2(-44, 20)
+lunge = 0.0
+flourish = "sunburst"
+kind = 0
+rig_animation = "heavy_down"
+
+[sub_resource type="Resource" id="heavy_air"]
+script = ExtResource("2_atk")
+skill_name = "Murder-Stroke"
+damage = 16.0
+knockback = 620.0
+knockback_up_ratio = -1.0
+knockback_forward = 0.35
+startup_time = 0.16
+active_time = 0.1
+recovery_time = 0.26
+post_end_lag = 0.28
+cooldown = 0.8
+reach = 84.0
+height = 120.0
+hitbox_offset = Vector2(0, 24)
+flourish = "hammer"
+weapon_arc = false
+kind = 0
+rig_animation = "heavy_air"
+
+[sub_resource type="Resource" id="heavy_dive"]
+script = ExtResource("2_atk")
+skill_name = "Beneath Me"
+damage = 18.0
+knockback = 660.0
+knockback_up_ratio = 0.75
+knockback_forward = 0.6
+startup_time = 0.13
+active_time = 0.1
+recovery_time = 0.28
+post_end_lag = 0.28
+cooldown = 0.7
+reach = 60.0
+height = 70.0
+hitbox_offset = Vector2(-19, 40)
+lunge = 0.0
+dive_speed = 1250.0
+flourish = "tread"
+weapon_arc = false
+kind = 0
+rig_animation = "heavy_dive"
+
+[resource]
+script = ExtResource("1_hero")
+rig = ExtResource("90_rig")
+hero_name = "Knight"
+description = "The king's champion, and he knows it. Slow, hard to launch, and every blow is a verdict."
+speed = 240.0
+ground_acceleration = 2800.0
+air_acceleration = 760.0
+jump_velocity = -640.0
+gravity_scale = 1.5
+defense = 8.0
+knockback_percent_scale = 0.9
+min_attack_interval = 0.0
+weapon_sound = "blade"
+accent = Color(0.28, 0.5, 1, 1)
+light_attack = SubResource("light")
+heavy_attack = SubResource("heavy")
+light_up = SubResource("light_up")
+light_down = SubResource("light_down")
+light_air = SubResource("light_air")
+heavy_up = SubResource("heavy_up")
+heavy_down = SubResource("heavy_down")
+heavy_air = SubResource("heavy_air")
+heavy_dive = SubResource("heavy_dive")
+jump_texture = ExtResource("5_jump")
+fall_texture = ExtResource("6_fall")
+jump_hframes = 7
+jump_vframes = 1
+jump_frames = 7
+jump_fps = 16.0
+fall_hframes = 8
+fall_vframes = 1
+fall_frames = 8
+fall_fps = 16.0
+air_faces_right = true
+air_sprite_height = 176.65
+walk_texture = ExtResource("4_run")
+walk_hframes = 14
+walk_vframes = 1
+walk_frames = 14
+walk_fps = 30.0
+walk_sprite_height = 185.06
+walk_faces_right = true
+icon = ExtResource("12_icon")
+texture = ExtResource("3_idle")
+faces_right = true
+color = Color(0.16, 0.28, 0.72, 1)
+sprite_height = 171.04
+idle_hframes = 28
+idle_vframes = 1
+idle_frames = 28
+idle_fps = 7.0
+hurt_texture = ExtResource("10_hurt")
+hurt_hframes = 8
+hurt_vframes = 1
+hurt_frames = 8
+hurt_fps = 16.0
+hurt_sprite_height = 171.04
+hurt_faces_right = true
+land_texture = ExtResource("7_land")
+land_hframes = 12
+land_vframes = 1
+land_frames = 12
+land_fps = 16.0
+land_sprite_height = 171.04
+land_faces_right = true
+death_texture = ExtResource("11_death")
+death_hframes = 14
+death_vframes = 1
+death_frames = 14
+death_fps = 10.0
+death_sprite_height = 140.2
+death_faces_right = true

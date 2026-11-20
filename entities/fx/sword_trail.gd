@@ -7,11 +7,14 @@ extends Node2D
 ## time, so it freezes with the hit-stop like everything else.
 
 ## How long a sample of the arc lasts, in seconds of game time.
-const LIFETIME := 0.15
+const LIFETIME := 0.22
 ## Blade tip speed (world px/s) below which no new arc is laid down.
-const MIN_SPEED := 650.0
+const MIN_SPEED := 480.0
 ## How far down the blade the inner edge of the arc reaches (0 = tip, 1 = guard).
-const DEPTH := 0.8
+const DEPTH := 0.92
+## How far past the tip the outer edge of the arc is drawn, in world px: the
+## sweep reads larger than the blade that made it.
+const OVERSHOOT := 9.0
 
 var color: Color = Color(0.85, 0.93, 1.0)
 
@@ -38,8 +41,9 @@ func feed(tip: Vector2, guard: Vector2, delta: float, swinging: bool) -> void:
 		fast = tip.distance_to(_last_tip) / delta > MIN_SPEED
 	_last_tip = tip
 	_has_last = true
+	var outer := tip + (tip - guard).normalized() * OVERSHOOT
 	if swinging and fast:
-		_samples.append([tip, tip.lerp(guard, DEPTH), 0.0])
+		_samples.append([outer, tip.lerp(guard, DEPTH), 0.0])
 	elif swinging and not _samples.is_empty():
 		# Keep the ribbon attached to the blade while it decelerates.
 		_samples.append([tip, tip.lerp(guard, DEPTH * 0.4), 0.0])
